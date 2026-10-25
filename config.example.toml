@@ -1,0 +1,27 @@
+# Sanitized Phase 0 example. No providers or server are implemented yet.
+# Omitted fields use defaults; local config.toml files are ignored by Git.
+[server]
+loopback_address = "127.0.0.1"
+port = 8787
+
+[lan]
+enabled = false
+listen_addresses = []
+allow_networks = []
+
+[remote]
+enabled = false
+public_origin = ""
+direct_path = "/direct"
+trusted_proxies = ["127.0.0.1/32"]
+
+[refresh]
+interval = "6h"
+global_concurrency = 8
+provider_concurrency = 3
+
+[providers]
+enabled = []
+
+[relay]
+enabled = false

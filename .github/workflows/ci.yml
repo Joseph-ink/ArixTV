@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Check formatting
+        shell: bash
+        run: |
+          unformatted=$(gofmt -l .)
+          if [[ -n "$unformatted" ]]; then
+            echo "$unformatted"
+            exit 1
+          fi
+      - run: go mod verify
+      - run: go vet ./...
+      - run: go test ./...
+      - name: Validate example configuration
+        run: go run ./cmd/arixtv config validate --config config.example.toml
+      - name: Validate cross-builds
+        shell: bash
+        run: |
+          mkdir -p bin
+          for target in linux/amd64 linux/arm64 darwin/arm64; do
+            GOOS=${target%/*} GOARCH=${target#*/} CGO_ENABLED=0 \
+              go build -trimpath -o "bin/arixtv-${target%/*}-${target#*/}" ./cmd/arixtv
+          done
