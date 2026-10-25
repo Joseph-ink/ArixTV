@@ -1,7 +1,7 @@
 # Phase 0 completion report
 
 Completed 2026-10-26 (Asia/Hong_Kong). Active project: `/Users/joseph/ArixTV`.
-Phase 1 is unstarted and requires owner review before continuing.
+Phase 0 was approved. Phase 0.1 supersedes its original toolchain baseline: minimum, CI and future release builds now use Go 1.27.3. Phase 1 is authorized separately.
 
 ## Repository tree
 
@@ -70,12 +70,9 @@ untracked. No files were staged, committed, or pushed during this task.
 | `go vet ./...` | Passed on Go 1.27.3 |
 | `go test ./...` | Passed: CLI and configuration tests; entry point has no separate test file |
 | `go mod tidy` and `go mod verify` | Passed; dependency graph clean and checksums verified |
-| `GOTOOLCHAIN=go1.25.0 go vet ./...` | Passed on declared minimum toolchain |
-| `GOTOOLCHAIN=go1.25.0 go test ./...` | Passed on declared minimum toolchain |
 | `GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -o bin/arixtv-linux-amd64 ./cmd/arixtv` | Passed; ELF x86-64, statically linked |
 | `GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -trimpath -o bin/arixtv-linux-arm64 ./cmd/arixtv` | Passed; ELF aarch64, statically linked |
 | `GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -trimpath -o bin/arixtv-darwin-arm64 ./cmd/arixtv` | Passed; Mach-O arm64 |
-| All three build commands above with `GOTOOLCHAIN=go1.25.0` | Passed; matches CI's Go version |
 | `bin/arixtv-darwin-arm64 version` | Passed; development metadata |
 | `bin/arixtv-darwin-arm64 config validate --config config.example.toml` | Passed; exit 0 |
 | Native CLI with nonexistent config | Passed; exit 1; no path/value echo |
@@ -131,13 +128,12 @@ Review before later provider work:
   obtain permission/license clarity before any FastChannels code reuse.
 - The only added dependency is MIT-licensed BurntSushi/toml v1.5.0; its notice
   is preserved in `THIRD_PARTY_NOTICES.md` for future distributions.
-- Decide whether third-party channel mirrors are acceptable, how ordinary
-  AES-128 HLS fits the clear-stream policy, and which anonymous public-app
-  identities/signing mechanisms are permitted without copied credentials.
-- Resolve preview/free-account intent and same-egress-only compatibility before
-  accepting affected providers. These are not Phase 0 blockers.
+- The owner subsequently settled mirror, HLS AES-128, anonymous identity,
+  account and same-egress policies in the specification. The original mapping
+  remains a historical upstream research artifact; current owner policy governs
+  future implementation. See the Phase 1 report for the new foundation.
 
-The next planned phase is **Phase 1 — Core domain and state**: portable channel,
+The phase following this historical report was **Phase 1 — Core domain and state**: portable channel,
 stream/provider models, registry, config integration, secret-redacting logging,
 hashed token storage, atomic snapshots/playlists, last-known-good behavior and
-refresh locking. It has not been started.
+refresh locking. It is covered in `PHASE1_REPORT.md`.

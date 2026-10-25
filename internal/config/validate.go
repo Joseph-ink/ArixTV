@@ -7,9 +7,17 @@ import (
 	"path"
 	"strings"
 	"time"
+
+	"github.com/Joseph-ink/ArixTV/internal/channel"
+	"github.com/Joseph-ink/ArixTV/internal/provider"
 )
 
 func (c Config) Validate() error {
+	for _, dir := range []string{c.Storage.DataDir, c.Storage.StateDir} {
+		if strings.TrimSpace(dir) == "" || strings.ContainsAny(dir, "\x00\r\n") {
+			return errors.New("storage paths must be nonempty local paths")
+		}
+	}
 	addr, err := netip.ParseAddr(c.Server.LoopbackAddress)
 	if err != nil || !addr.IsLoopback() || addr.Zone() != "" {
 		return errors.New("server.loopback_address must be a loopback IP address")
@@ -81,13 +89,14 @@ func validPrefixes(values []string) bool {
 }
 
 func validProviderID(id string) bool {
-	if id == "" || id[0] < 'a' || id[0] > 'z' {
-		return false
+	return channel.ValidProviderID(id)
+}
+
+// ValidateProviders is for operational commands once runtimes exist. The
+// config-validation CLI intentionally remains syntax-only for provider IDs.
+func (c Config) ValidateProviders(registry *provider.Registry) error {
+	if registry == nil {
+		return errors.New("provider registry is required")
 	}
-	for _, char := range id {
-		if (char < 'a' || char > 'z') && (char < '0' || char > '9') && char != '-' && char != '_' {
-			return false
-		}
-	}
-	return true
+	return registry.ValidateEnabled(c.Providers.Enabled)
 }

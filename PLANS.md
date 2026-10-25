@@ -33,15 +33,15 @@ Establish a clean Go repository that builds locally and in CI before provider wo
 
 ### Phase 0 progress and decisions (2026-10-26)
 
-- **Phase 0 complete; awaiting owner review.** Formatting, vet, unit tests,
+- **Phase 0 approved by owner.** Formatting, vet, unit tests,
   example/CLI smoke checks, module verification, all three cross-builds, inventory
   completeness, evidence paths, secret-pattern and ignore-rule checks passed.
   See `docs/PHASE0_REPORT.md` for commands, results and the repository tree.
-- Validation passed on local Go 1.27.3 and declared minimum Go 1.25.0, including
-  cross-builds with both toolchains. Linux binaries were built, not executed on
+- Phase 0.1 replaces the former compatibility baseline with Go 1.27.3 for
+  minimum support, CI and release builds. Linux binaries were built, not executed on
   Linux; native macOS arm64 CLI smoke tests passed.
 - Module path follows the existing origin: `github.com/Joseph-ink/ArixTV`.
-  Minimum Go version is 1.25.0; runtime has no cgo dependency.
+  Minimum Go version is 1.27.3; runtime has no cgo dependency.
 - One small MIT-licensed dependency, BurntSushi/toml v1.5.0, provides full TOML
   parsing. An incomplete custom parser would be a larger correctness risk.
 - Config validation uses the spec's initial schema, local `./config.toml`
@@ -53,13 +53,12 @@ Establish a clean Go repository that builds locally and in CI before provider wo
   one dynamic playlist family, and 35 expanded Free Networks adapters.
 - Mapping distinguishes source-code evidence from live playback validation.
   Initial Phase 3 research shortlist: Vizio, Xumo, Plex; LG as reserve.
-- Owner review before later provider work: ArixTV license; upstream reuse rights
-  (no root license found); third-party mirrors; AES-128 policy; app-signing and
-  public-client identities; preview/account intent; same-egress-only providers.
-  These do not block Phase 0 and no provider workaround is implemented.
+- Owner has since settled mirror, AES-128, anonymous identity, account and
+  same-egress policies in the specification. ArixTV license and upstream reuse
+  rights remain open; no upstream provider code is copied.
 - No commit or push requested. Hosted CI execution will require pushing the
   workflow; local execution of its checks is recorded on completion.
-- Stop after Phase 0 for owner review. Phase 1 remains unstarted.
+- Owner approved Phase 0 and authorized Phase 0.1 followed by Phase 1 only.
 
 ### Exit criteria
 - Repository builds.
@@ -68,27 +67,39 @@ Establish a clean Go repository that builds locally and in CI before provider wo
 - No provider implementation yet.
 - Cross-build succeeds for all three required targets.
 
+## Phase 0.1 — Security/toolchain baseline
+
+- [x] Set minimum, CI and future release baseline to Go 1.27.3.
+- [x] Remove obsolete compatibility claims/checks from documentation.
+- [x] Validate tidy, modules, formatting, vet, tests and all three builds.
+- [x] Official govulncheck v1.9.0 added in separate CI job; local scan passed.
+
 ## Phase 1 — Core domain and state
+
+**Phase 1 complete; awaiting owner review.** Domain/state foundations, deterministic
+failure tests, race checks and Go 1.27.3 cross-builds are complete. No HTTP server,
+refresh coordinator, provider runtime or lifecycle CLI was implemented. See
+`docs/PHASE1_REPORT.md` for exact commands and design limits.
 
 ### Goals
 Implement the portable core models and safe local state handling.
 
 ### Tasks
-- [ ] Channel model.
-- [ ] Stream model.
-- [ ] Playback capability model.
-- [ ] Provider metadata/status model.
-- [ ] Provider registry.
-- [ ] Config model.
-- [ ] Logging with secret redaction.
-- [ ] Token creation/validation/hash persistence.
-- [ ] Provider snapshot storage.
-- [ ] Atomic JSON write helper.
-- [ ] Atomic M3U write helper.
-- [ ] Last-known-good snapshot semantics.
-- [ ] Refresh lock.
-- [ ] State metadata.
-- [ ] Tests for atomic updates and rollback behavior.
+- [x] Channel model.
+- [x] Stream model.
+- [x] Playback capability model, including unknown and ordinary HLS encryption policy.
+- [x] Provider metadata/status model.
+- [x] Provider registry.
+- [x] Config model.
+- [x] Logging with secret redaction.
+- [x] Token creation/validation/hash persistence.
+- [x] Provider snapshot storage.
+- [x] Atomic JSON write helper.
+- [x] Atomic M3U write helper.
+- [x] Last-known-good snapshot semantics.
+- [x] Refresh lock.
+- [x] State metadata.
+- [x] Tests for atomic updates and rollback behavior.
 
 ### Exit criteria
 - State writes are crash-safe.

@@ -13,6 +13,10 @@ import (
 const maxConfigBytes = 1 << 20
 
 type Config struct {
+	Storage struct {
+		DataDir  string `toml:"data_dir"`
+		StateDir string `toml:"state_dir"`
+	} `toml:"storage"`
 	Server struct {
 		LoopbackAddress string `toml:"loopback_address"`
 		Port            int    `toml:"port"`
@@ -43,6 +47,8 @@ type Config struct {
 
 func defaults() Config {
 	var c Config
+	c.Storage.DataDir = "./data"
+	c.Storage.StateDir = "./state"
 	c.Server.LoopbackAddress = "127.0.0.1"
 	c.Server.Port = 8787
 	c.Remote.DirectPath = "/direct"

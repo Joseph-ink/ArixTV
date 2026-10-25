@@ -1,9 +1,9 @@
 # Initial configuration contract
 
-Phase 0 implements file parsing and validation for the conceptual configuration
+The configuration package implements file parsing and validation for the conceptual configuration
 in `ARIXTV_SPEC.md` §36. It does not start services, enable providers, check
 provider availability, generate secrets, schedule work, or contact any network.
-Those capabilities remain in their planned phases.
+Operational commands remain in their planned phases.
 
 Run `arixtv config validate --config PATH`. Without the flag, the path is
 `./config.toml`, including on macOS. Linux installation/service code will pass
@@ -32,11 +32,50 @@ configuration values, parser source text, or the supplied file path.
 
 The checked-in `config.example.toml` contains no credentials or enabled providers.
 Provider ID validation is syntactic only: `enabled=["xumo"]` does not assert a
-provider exists or is ready. Phase 1 will extend the config/domain model and
-later phases will check operational compatibility through the provider registry.
+provider exists or is ready. Phase 1 adds storage paths and an explicit operational registry check;
+later commands will invoke that check when real runtimes exist.
 CIDR validation checks syntax, not host interfaces, routing, firewall policy or
 provider location. No port binding or DNS lookup occurs during validation.
 
 Configuration stores no public bearer tokens. Unknown token/credential fields
 are rejected. Local `config.toml` files and runtime directories are ignored by
 Git; sanitized examples/fixtures must be explicitly reviewed before inclusion.
+
+## Phase 1 storage and registry integration
+
+The configuration schema now additionally accepts:
+
+```toml
+[storage]
+data_dir = "./data"
+state_dir = "./state"
+```
+
+These are defaults for omitted fields, so existing Phase 0 configurations still
+validate. Empty paths, NUL/newlines, type errors and unknown fields are rejected.
+Paths are relative to the invoking process's working directory; no path is assumed
+to be `/etc/arixtv/` inside the core. Linux deployment will pass absolute data/state
+paths later. Config validation creates no files, checks no interfaces and performs
+no DNS/provider requests. Examples contain no enabled providers or tokens.
+
+Later operational commands can call `Config.ValidateProviders(registry)` in
+addition to structural validation. It rejects missing runtimes, disabled/unsupported
+sources, duplicates, and all account-based sources. The current CLI keeps the
+Phase 0 syntax-only provider-ID behavior because no real runtimes exist yet.
+Provider IDs are shared with the domain/store validation: lowercase letter first,
+then letters, digits, `_` or `-`, at most 64 bytes.
+
+The state layout supplied to these foundations is:
+
+```text
+<data_dir>/providers/<id>.json       # versioned LKG channel snapshot
+<data_dir>/providers/.<id>.lock      # persistent provider mutation lock inode
+<state_dir>/tokens.json             # names, SHA-256 hashes, lifecycle timestamps
+<state_dir>/tokens.lock             # persistent token mutation lock inode
+<state_dir>/refresh.lock            # global scheduled/manual refresh lock inode
+<state_dir>/refresh/<id>.json        # attempt/failure observation, no channel data
+```
+
+No tokens, relay secrets, provider sessions, account settings or later-phase
+service configuration were added to TOML. Snapshot and token JSON versions are 1;
+unknown versions require explicit migration/recovery, never silent reset.

@@ -133,11 +133,13 @@ arixtv-relay.service
 
 ## Development status
 
-Phase 0 provides the repository foundation, build metadata, and configuration
-validation. HTTP serving, discovery, refresh, playlists, tokens, and installation
-are planned features; no IPTV providers are implemented yet.
+Phase 1 provides typed channel/stream classifications, a provider registry,
+strict configuration, secret-redacting logging, hashed token storage, versioned
+atomic snapshots, refresh metadata and Linux/macOS refresh locks. The CLI still
+exposes only `version`, `config validate` and help. HTTP serving, provider discovery,
+refresh coordination, playlist generation and installation remain planned.
 
-Requires Go 1.25 or newer. Build and run locally:
+Requires Go 1.27.3 or newer. CI and release builds use Go 1.27.3. Build and run locally:
 
 ```sh
 go build -o bin/arixtv ./cmd/arixtv
@@ -149,7 +151,8 @@ go build -o bin/arixtv ./cmd/arixtv
 Linux service will supply `/etc/arixtv/config.toml` explicitly. To create a local
 configuration, copy `config.example.toml` to `config.toml` (ignored by Git).
 Validation reads the file without writing state or making network requests.
-See [configuration behavior](docs/CONFIGURATION.md) for defaults and limits.
+See [configuration behavior](docs/CONFIGURATION.md) for defaults and limits, and
+the [Phase 1 report](docs/PHASE1_REPORT.md) for state/security design and validation.
 
 The only commands available are `version`, `config validate`, and help. Exit
 codes are 0 for success/help, 1 for configuration failure, and 2 for usage errors.
@@ -169,7 +172,7 @@ GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o bin/arixtv-linux-arm64 ./cmd/a
 GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -o bin/arixtv-darwin-arm64 ./cmd/arixtv
 ```
 
-GitHub Actions checks formatting, module integrity, vet, tests, example
+GitHub Actions checks formatting, module integrity, vet, tests, pinned vulnerability scanning, example
 configuration, and all three builds. Tests use local inputs, with no live
 provider dependency. Linux deployment assets belong under `deploy/linux/`,
 outside the portable Go packages.

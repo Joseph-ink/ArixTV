@@ -56,8 +56,6 @@ Do not assume a discovered URL remains valid indefinitely.
 
 ```go
 type Provider interface {
-    ID() string
-    Name() string
     Discover(ctx context.Context) ([]Channel, error)
     Resolve(ctx context.Context, ch Channel) (Stream, error)
 }
@@ -81,7 +79,8 @@ Suggested playback capability:
 
 ## V1 research pool
 
-No provider is implemented in Phase 0. The inspected upstream inventory is
+No provider is implemented in Phase 1. The metadata registry and runtime interface
+are foundations only. The inspected upstream inventory is
 pinned to commit `7e61c1ef127f7119326eb98381726d6f7cfaa56d` in the mapping.
 Its initial research priority is Vizio, Xumo and Plex; LG is a reserve candidate.
 Zeam's IP/UA-bound playback, STIRR's proxy behavior, and VIDAA's signed-app
@@ -204,3 +203,20 @@ Provider behavior may be learned from:
 Do not copy third-party implementation code without confirming license compatibility.
 
 ArixTV provider code should be independently implemented and tested.
+
+
+## Approved Phase 1 policy for later implementation
+
+The owner policies in `ARIXTV_SPEC.md` govern implementation over historical
+mapping questions: V1 accepts anonymous/free sources only; free-account sources
+are excluded; unofficial mirrors are experimental/future by default; and embedded
+application/authentication secrets cannot be copied or distributed. Standard HLS
+AES-128 is classified separately from DRM. Same-egress/IP-bound clear channels
+are always `clear_relay_only`, excluded from both normal LAN and Remote Direct
+playlists. No exception is inferred just because a particular LAN shares egress.
+
+The immutable `provider.Registry` now owns identity/status/access/mirror metadata,
+separate from the two-method Discover/Resolve runtime. Phase 3 providers must
+validate channel classification and honor the complete-discovery contract before
+committing snapshots. See `PHASE1_REPORT.md` for the persistence and security API
+contracts. No provider-specific implementation is part of Phase 1.

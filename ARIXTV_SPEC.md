@@ -21,6 +21,8 @@ ArixTV is intentionally not a general-purpose IPTV management platform.
 
 - Project: `ArixTV`
 - Binary: `arixtv`
+- Minimum supported Go: **1.27.3**; CI and future release builds use Go 1.27.3.
+  Older toolchains are unsupported.
 - Linux install root: `/etc/arixtv/`
 - Linux systemd unit directory: `/etc/systemd/system/`
 
@@ -134,13 +136,12 @@ Conceptual interface:
 
 ```go
 type Provider interface {
-    ID() string
-    Name() string
     Discover(ctx context.Context) ([]Channel, error)
     Resolve(ctx context.Context, ch Channel) (Stream, error)
 }
 ```
 
+Provider identity/display metadata is registered separately from the runtime interface.
 Provider implementations must be isolated from each other.
 
 A failure in one provider must not:
@@ -161,7 +162,12 @@ Playback capability should support:
 - `drm`;
 - `unsupported`.
 
-The normal V1 public playlist should contain `clear_direct` only.
+The normal V1 public playlist contains `clear_direct` only; `unknown` is an
+explicit capability and must fail closed. Stable V1 sources require anonymous,
+free access and should use provider-owned/public APIs. Unofficial mirrors are
+experimental/future by default. Account-based sources (including free accounts)
+are out of scope. Provider metadata represents access type and mirror dependency
+separately from maturity and playback capability.
 
 ## 6. Initial provider research pool
 
@@ -204,6 +210,22 @@ ArixTV may detect and classify protected content only to exclude it.
 
 Do not implement decryption or circumvention.
 
+Ordinary standards-compliant HLS AES-128 is not automatically DRM. Use explicit
+classification values `clear`, `hls_standard_encrypted`, `widevine`, `playready`,
+`fairplay`, `other_drm`, and `unknown`. A normal IPTV client may fetch ordinary
+HLS keys through its standard playback workflow. If special cookies, headers,
+request identity, or same-egress/session context prevent direct client playback,
+classify the clear stream as `clear_relay_only`. Same-egress/IP-bound streams
+never enter either LAN Direct or Remote Direct playlists, even if a particular
+LAN happens to share public egress. External relay integration remains Phase 7.
+
+Anonymous protocols may use public constants, non-secret client IDs, independently
+understood algorithms, and locally generated session IDs. Do not copy/distribute
+private keys, embedded application secrets, proprietary-client authentication
+secrets, account credentials, or secrets from repositories with unclear rights.
+If such a secret is indispensable, classify the provider unsupported/out of scope
+until the owner explicitly revisits the decision.
+
 ## 8. No EPG by design
 
 ArixTV has no EPG subsystem.
@@ -237,7 +259,12 @@ provider_metadata/fingerprint
 
 Avoid storing large opaque provider payloads unless needed for reliable resolution.
 
-Sensitive provider session information must not be written into channel snapshots unless absolutely necessary and safely protected.
+Phase 1 channels persist identity/metadata and an optional SHA-256 metadata
+fingerprint, with explicit JSON field names. Arbitrary provider payloads, headers,
+resolved URLs and session secrets are absent from the channel schema. Public
+artwork URLs must have no credentials, query values or fragments; later providers
+must normalize or omit unsuitable artwork. Snapshot schema version 1 validates
+all enum values, timestamps and provider/channel identity consistency.
 
 ## 10. Stream model
 
@@ -251,6 +278,9 @@ expiry if known
 ```
 
 The public playlist must not permanently embed provider URLs that are signed or short-lived.
+The Phase 1 ephemeral `channel.Stream` excludes its URL from JSON, formatting,
+and structured log representations. It records capability, type, protection and
+optional expiry; validation rejects expired results and contradictory labels.
 
 ## 11. Snapshot model
 
@@ -280,6 +310,22 @@ Snapshot update algorithm:
 If refresh fails, preserve the previous valid snapshot.
 
 This is the Last Known Good rule.
+
+Phase 1 `store.Commit` requires an explicitly complete, nonempty candidate, rejects
+invalid/duplicate/cross-provider channels and stale generations, and increments
+provider generation only on replacement. The coordinator must mark any partial or
+errored discovery incomplete. Corrupt/unknown-version state requires operator
+recovery and is not silently reset. Failed observations are separate from snapshots.
+JSON reads reject unknown/duplicate keys and oversized/trailing content.
+
+Persistence writes mode 0600 files in private newly created directories (0700),
+serializes before replacement, syncs the temporary file, closes, renames in the
+same directory and syncs that directory. New directory entries are synced in their
+parents. A failure before rename preserves the previous file. A directory-sync
+failure after rename returns an explicit durability-uncertain error; reload the
+committed state instead of assuming rollback. Paths must be on an operator-owned
+local filesystem with atomic rename/advisory locking; network-filesystem semantics
+are outside the current guarantee.
 
 ## 12. Playlist generation
 
@@ -330,7 +376,7 @@ Requirements:
 - generated with `crypto/rand`;
 - target strength: 256 bits;
 - optionally associated with a friendly name;
-- persist token hashes instead of cleartext where practical;
+- persist only SHA-256 token hashes, never recoverable cleartext;
 - show cleartext token only when created/rotated;
 - never log full token.
 
@@ -342,6 +388,14 @@ arixtv token create <name>
 arixtv token rotate <name>
 arixtv token revoke <name>
 ```
+
+Phase 1 creates 32 random bytes encoded as `atv_` plus raw URL-safe base64. The
+store exposes plaintext only from successful creation/rotation via an explicit
+redacting `Secret` wrapper. Verification hashes once and compares against every
+stored digest using constant-time comparisons; corrupted state fails closed.
+Create/rotate/revoke operations lock and atomically replace `state/tokens.json`.
+Names and creation/rotation/revocation timestamps are retained; revoked tokens
+cannot be rotated back into activity. CLI lifecycle commands are staged later.
 
 Unauthorized requests should normally return `404`.
 
@@ -665,6 +719,13 @@ arixtv refresh --provider <provider>
 
 Prevent concurrent refresh runs using an OS lock/lockfile.
 
+Phase 1 provides nonblocking kernel advisory locks on both Linux and Darwin,
+with a persistent `state/refresh.lock` inode. A future coordinator holds it across
+all scheduled/manual refresh work. Kernel locks release on close/process exit;
+never delete the lock file or steal it based on PID/age. Per-provider snapshot
+mutations and token mutations have separate locks to prevent lost updates.
+Other platforms fail explicitly instead of pretending cross-process locking works.
+
 Default refresh concurrency should be conservative for 1C1G:
 - global: about 8;
 - per-provider: about 2–4.
@@ -808,6 +869,10 @@ Target Linux path:
 Conceptual structure:
 
 ```toml
+[storage]
+data_dir = "./data"
+state_dir = "./state"
+
 [server]
 loopback_address = "127.0.0.1"
 port = 8787
@@ -835,7 +900,10 @@ enabled = ["xumo", "plex"]
 enabled = false
 ```
 
-Do not store public cleartext token values in normal config if avoidable.
+Do not store public cleartext token values in config. Storage paths are caller-
+configured and portable; Linux deployment will supply `/etc/arixtv/data` and
+`/etc/arixtv/state` later. Parsing/validation never creates directories or binds
+ports. Omitted storage settings preserve compatibility with Phase 0 configs.
 
 ## 37. HTTP hardening
 
@@ -868,6 +936,11 @@ Nginx examples for `/direct/` and `/relay/` should default to secret-safe loggin
 
 ## 39. CI
 
+CI uses Go 1.27.3 explicitly, with `GOTOOLCHAIN=local`. Future Phase 8 release
+work must use that same baseline or an explicitly approved newer security baseline.
+This baseline includes the crypto/x509 mitigation for CVE-2026-111943; see the
+[Go release history](https://go.dev/doc/devel/release#go1.27.3).
+
 Normal push/PR CI should run:
 - `gofmt` check;
 - `go vet ./...`;
@@ -875,6 +948,10 @@ Normal push/PR CI should run:
 - build validation.
 
 Do not make normal CI depend on live third-party provider availability.
+A separate job runs the official `golang.org/x/vuln/cmd/govulncheck@v1.9.0`
+against the current Go vulnerability database. The scanner code/version and Go
+compiler are pinned; the database intentionally updates. No `@latest` install is
+used, and the scanner is not a production module dependency.
 
 Provider tests should use:
 - local HTTP test servers;

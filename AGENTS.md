@@ -5,6 +5,7 @@
 - Project name: **ArixTV**
 - Binary name: `arixtv`
 - Primary language: Go
+- Minimum Go / CI / release baseline: **1.27.3** (no older compatibility target).
 - Primary production target: Linux
 - Required binary targets:
   - `linux/amd64`
@@ -167,7 +168,14 @@ Player → HTTPS Nginx → external IPTV proxy → local ArixTV resolver → ups
 
 ## Provider policy
 
-V1 focuses on free FAST/IPTV sources.
+V1 is anonymous/free FAST only. Free-account and paid-account providers remain
+out of scope. Stable providers should use provider-owned/public APIs; unofficial
+mirrors are experimental/future by default. Ordinary HLS AES-128 is not itself DRM.
+Clear IP-bound/session-bound streams or streams requiring special client headers
+are `clear_relay_only` and never enter LAN/Remote Direct playlists. Do not copy
+embedded application secrets, authentication secrets or private keys; anonymous
+protocols may use non-secret public IDs/constants and locally generated identities.
+See `ARIXTV_SPEC.md` for the authoritative owner policies.
 
 Initial candidates include:
 - Pluto TV

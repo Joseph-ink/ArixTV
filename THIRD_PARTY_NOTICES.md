@@ -32,3 +32,12 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ```
+
+
+## Development tooling (not linked into ArixTV)
+
+CI installs the official `golang.org/x/vuln/cmd/govulncheck` at **v1.9.0**,
+BSD-3-Clause: <https://go.googlesource.com/vuln/+/refs/tags/v1.9.0/LICENSE>.
+The scanner and its versioned dependency graph are not production dependencies,
+are not vendored, and are not included in ArixTV binary distributions. The
+runtime module graph still contains only BurntSushi/toml and the standard library.

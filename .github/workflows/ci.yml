@@ -7,14 +7,20 @@ on:
 permissions:
   contents: read
 
+env:
+  GOTOOLCHAIN: local
+
 jobs:
   check:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-14]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
+          go-version: '1.27.3'
           cache: true
       - name: Check formatting
         shell: bash
@@ -24,9 +30,12 @@ jobs:
             echo "$unformatted"
             exit 1
           fi
+      - run: go mod tidy
+      - run: git diff --exit-code -- go.mod go.sum
       - run: go mod verify
       - run: go vet ./...
       - run: go test ./...
+      - run: go test -race ./...
       - name: Validate example configuration
         run: go run ./cmd/arixtv config validate --config config.example.toml
       - name: Validate cross-builds
@@ -34,6 +43,20 @@ jobs:
         run: |
           mkdir -p bin
           for target in linux/amd64 linux/arm64 darwin/arm64; do
+            GOOS=${target%/*} GOARCH=${target#*/} CGO_ENABLED=0 go build ./...
             GOOS=${target%/*} GOARCH=${target#*/} CGO_ENABLED=0 \
               go build -trimpath -o "bin/arixtv-${target%/*}-${target#*/}" ./cmd/arixtv
           done
+
+  vulnerabilities:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.3'
+          cache: true
+      - name: Install pinned official scanner
+        run: go install golang.org/x/vuln/cmd/govulncheck@v1.9.0
+      - name: Check reachable vulnerabilities
+        run: govulncheck -test ./...

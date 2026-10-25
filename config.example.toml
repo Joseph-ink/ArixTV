@@ -1,5 +1,9 @@
-# Sanitized Phase 0 example. No providers or server are implemented yet.
+# Sanitized foundation example. No providers or server are implemented yet.
 # Omitted fields use defaults; local config.toml files are ignored by Git.
+[storage]
+data_dir = "./data"
+state_dir = "./state"
+
 [server]
 loopback_address = "127.0.0.1"
 port = 8787
