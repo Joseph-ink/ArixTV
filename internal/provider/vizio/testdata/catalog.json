@@ -1,0 +1,26 @@
+{
+  "currentCategory": "ALL", "channelIds": [],
+  "channels": [
+    {
+      "channelId": "news-1", "channelName": " Example News ",
+      "category": " News ", "channelType": "FAST", "channelState": {"id": 2},
+      "channelIcon": "https://images.example.test/news.png",
+      "channelUrls": ["https://cdn.example.test/live.m3u8?dnt=%7BDNT%7D&app=%7BAPP_NAME%7D&signature=FAKE_SIGNATURE"],
+      "licenseUrl": "", "licenseToken": "", "tokenUrl": "",
+      "mobileStreamStartDate": "2020-01-01T00:00:00Z", "mobileStreamEndDate": "2075-01-01T00:00:00Z",
+      "airingsKey": "UNUSED_GUIDE_KEY", "airings": [{"title": "UNUSED_PROGRAM_TITLE"}],
+      "metadata": [{"key": "unused", "value": "UNUSED_OPAQUE_DATA"}]
+    },
+    {
+      "channelId": "protected-2", "channelName": "Protected Example", "category": "Sports",
+      "channelType": "FAST", "channelState": {"id": 2},
+      "channelUrls": ["https://cdn.example.test/protected.m3u8"],
+      "licenseUrl": "https://license.example.test/placeholder", "licenseToken": "", "tokenUrl": "https://auth.example.test/placeholder"
+    },
+    {
+      "channelId": "unknown-3", "channelName": "Unknown Example", "category": "Other",
+      "channelType": "FAST", "channelState": {"id": 2},
+      "channelUrls": ["https://cdn.example.test/unknown.m3u8"]
+    }
+  ]
+}

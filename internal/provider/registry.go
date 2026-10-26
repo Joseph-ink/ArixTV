@@ -1,4 +1,4 @@
-// Package provider defines provider metadata and a registry; no implementations.
+// Package provider defines provider metadata and the immutable runtime registry.
 package provider
 
 import (
@@ -116,8 +116,8 @@ func (r *Registry) List() []Metadata {
 	return result
 }
 
-// ValidateEnabled is an operational opt-in check for later commands; syntax-only
-// CLI validation remains backwards compatible while the registry is empty.
+// ValidateEnabled checks operational availability; CLI config validation keeps
+// its backwards-compatible syntax-only provider ID behavior.
 func (r *Registry) ValidateEnabled(ids []string) error {
 	seen := map[string]bool{}
 	for _, id := range ids {

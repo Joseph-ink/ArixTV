@@ -137,8 +137,13 @@ Phase 1 provides typed channel/stream classifications, a provider registry,
 strict configuration, secret-redacting logging, hashed token storage, versioned
 atomic snapshots, refresh metadata and Linux/macOS refresh locks. Phase 2 adds `serve`, separate loopback/LAN policies, protected Direct M3U output,
 tune-time 302 resolution, bounded limits, snapshot reload and graceful shutdown.
-Real provider discovery, refresh coordination, file playlist generation, relay
-integration and installation remain planned. No real providers are implemented.
+Phase 3A adds the experimental anonymous **Vizio WatchFree+** runtime, using its
+first-party catalog and fresh HLS resolution. No other real providers are registered.
+See [Vizio support and live-test limitations](docs/providers/VIZIO.md).
+Refresh coordination/CLI, file playlist generation, relay integration and
+installation remain planned. Enabling `vizio` does not initiate discovery; serving
+consumes existing snapshots. The offline compatibility test demonstrates the full
+discovery → snapshot → protected M3U → bodyless 302 path.
 
 Requires Go 1.27.3 or newer. CI and release builds use Go 1.27.3. Build and run locally:
 
@@ -213,8 +218,8 @@ License has not yet been selected. Do not assume reuse rights until a repository
 
 The example starts an empty loopback service at `127.0.0.1:8787`; `/healthz` is
 local-only. With no provisioned tokens or providers, public requests are denied.
-The binary's provider registry remains empty until Phase 3; specifying unknown
-or unavailable enabled providers is a safe startup error. Token lifecycle CLI
+The binary registers experimental `vizio`; the example keeps it disabled.
+Specifying unknown or unavailable enabled providers is a safe startup error. Token lifecycle CLI
 commands remain staged; tests provision tokens through the Phase 1 store API.
 
 LAN mode additionally requires explicit listeners, allowed CIDRs and

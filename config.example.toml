@@ -1,4 +1,5 @@
-# Sanitized Phase 2 example. The HTTP server is available; no real providers exist.
+# Sanitized example. HTTP serving and experimental Vizio runtime are available.
+# Enabling vizio serves existing snapshots; discovery/refresh CLI is still planned.
 # Omitted fields use defaults; local config.toml files are ignored by Git.
 [storage]
 data_dir = "./data"

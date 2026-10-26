@@ -27,5 +27,8 @@ config.*.toml
 /private/
 *.m3u
 *.m3u8
+# Explicitly reviewed, synthetic protocol fixtures; runtime playlists stay ignored.
+!/internal/provider/vizio/testdata/master.m3u8
+!/internal/provider/vizio/testdata/media.m3u8
 *.har
 *.log

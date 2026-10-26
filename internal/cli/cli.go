@@ -8,7 +8,7 @@ import (
 	"io"
 
 	"github.com/Joseph-ink/ArixTV/internal/config"
-	"github.com/Joseph-ink/ArixTV/internal/provider"
+	"github.com/Joseph-ink/ArixTV/internal/provider/builtin"
 	"github.com/Joseph-ink/ArixTV/internal/server"
 )
 
@@ -71,7 +71,11 @@ func RunContext(ctx context.Context, args []string, stdout, stderr io.Writer, bu
 		return 1
 	}
 	if serve {
-		registry, _ := provider.NewRegistry()
+		registry, err := builtin.NewRegistry()
+		if err != nil {
+			fmt.Fprintln(stderr, "error: provider registry initialization failed")
+			return 1
+		}
 		app, err := server.New(c, server.Options{Registry: registry, LogOutput: stderr, Version: build.Version})
 		if err == nil {
 			err = app.Run(ctx)

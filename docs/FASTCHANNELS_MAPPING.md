@@ -62,7 +62,7 @@ routing evidence is linked in the implementation discrepancies section.
 | The Roku Channel (`roku`) | Free; anonymous session | Session cookies; EPG collections, billboards and content API fallback | Playback API supplies fresh HLS; separate DASH path carries DRM | Mixed HLS/DASH | Mixed | Direct for clear HLS; bridge for DRM | Cloudflare-sensitive; geo/session cookies and expiring playback URLs | V1 candidate (clear only; higher operational risk) | Not implemented | [roku.py](https://github.com/kineticman/FastChannels/blob/7e61c1ef127f7119326eb98381726d6f7cfaa56d/app/scrapers/roku.py) |
 | Samsung TV Plus (`samsung`) | Free | Third-party gzipped per-region channel mirror; skip license_url entries | Follow short-link redirects to final CDN with appropriate request UA | HLS selected | Mixed catalog; licensed entries excluded | Direct candidate | Configurable regions; mirror and redirect service are extra dependencies | V1 candidate (clear only; mirror review) | Not implemented | [samsung.py](https://github.com/kineticman/FastChannels/blob/7e61c1ef127f7119326eb98381726d6f7cfaa56d/app/scrapers/samsung.py) |
 | LG Channels (`lg-channels`) | Free | Public schedulelist API contains channel metadata and mediaStaticUrl | Expand URL macros at tune time | HLS | Unknown catalog-wide; clear path inferred | Direct candidate | Country code and anonymous ad/device macros; verify media does not require API headers | V1 candidate (after clear-stream validation) | Not implemented | [lg_channels.py](https://github.com/kineticman/FastChannels/blob/7e61c1ef127f7119326eb98381726d6f7cfaa56d/app/scrapers/lg_channels.py) |
-| Vizio WatchFree+ (`vizio`) | Free | Public channels API; skip tokenUrl-gated channels | Upstream currently expands ad macros at discovery and inherits base URL resolution; ArixTV must recheck at tune | HLS | Clear selected path (upstream description) | Direct candidate | US mobile catalog; token-gated channels excluded; URL freshness still needs testing | V1 candidate | Not implemented | [vizio.py](https://github.com/kineticman/FastChannels/blob/7e61c1ef127f7119326eb98381726d6f7cfaa56d/app/scrapers/vizio.py) |
+| Vizio WatchFree+ (`vizio`) | Anonymous/free | First-party single-response catalog; explicit license/token fields and mobile eligibility | FastChannels still expands discovery URLs and inherits unchanged resolver; ArixTV refetches catalog and validates bounded HLS at tune time | HLS for selected references | Mixed: 1 explicit licensed/token-gated entry among 472 observed; missing protection fields remain unknown | Catalog-qualified Direct candidates; cookies/explicit IP binding relay-only; live Resolve not certified | US mobile market; no account/session bootstrap; URL lifetime and cross-egress behavior unproven; CDN errors observed | V1 experimental candidate, excluded protected/unknown paths | Experimental implementation, Phase 3A; offline server integration passes | [current vizio.py](https://github.com/kineticman/FastChannels/blob/40f5903cb43979e00e8d6cc7186d855c93eed6b1/app/scrapers/vizio.py), [first-party API](https://watchfreeplus-epg-prod.smartcasttv.com/api/channels), [current evidence/limits](providers/VIZIO.md) |
 | Zeam (`zeam`) | Free | All Channels JSON embedded in live page; nearby API is only a subset | StreamInfo returns fresh short-lived signed master | HLS; ordinary AES-128 reported | Clear of DRM per upstream; AES-128 encrypted | Direct only with shared public egress; relay needed across IPs | Token IP-bound; variant/key access tied to latest master-fetch UA; do not prefetch after client | Future candidate for general deployment; conditional LAN evaluation | Not implemented | [zeam.py](https://github.com/kineticman/FastChannels/blob/7e61c1ef127f7119326eb98381726d6f7cfaa56d/app/scrapers/zeam.py) |
 | TCL TV+ (`tcl`) | Free | Country livetab → category programlist | format-stream-url API with bundle/device/source metadata | HLS | Unknown catalog-wide; clear path inferred | Mixed: direct paths; upstream proxies Publica manifests/segments | Country/device ID; Publica proxy is documented as a browser CORS workaround, not proof native clients require relay | V1 candidate for proven direct subset; proxy subset future pending native-client test | Not implemented | [tcl.py](https://github.com/kineticman/FastChannels/blob/7e61c1ef127f7119326eb98381726d6f7cfaa56d/app/scrapers/tcl.py) |
 | Whale TV+ (`whale`) | Free | rlaxx/Zeasn browser category/channel API | Re-fetch stale channel URL list; substitute fresh macros | HLS | Unknown catalog-wide; clear path inferred | Direct candidate | Browser/device/region headers and expiring channel URL cache | V1 candidate (validate clear paths) | Not implemented | [whale.py](https://github.com/kineticman/FastChannels/blob/7e61c1ef127f7119326eb98381726d6f7cfaa56d/app/scrapers/whale.py) |
@@ -281,3 +281,23 @@ Record the new branch, commit and inspection date; compare the registry and
 Free Networks adapter list, update aliases/dynamic families, revise evidence and
 unknowns, and update current ArixTV implementation status. Preserve explicit
 exclusions even when a provider has no V1 implementation.
+
+## Phase 3A Vizio-only reinspection (2026-10-26)
+
+The table's Vizio row is now based on current default `development` commit
+[`40f5903cb43979e00e8d6cc7186d855c93eed6b1`](https://github.com/kineticman/FastChannels/tree/40f5903cb43979e00e8d6cc7186d855c93eed6b1)
+and independent public API requests. Other rows retain the original Phase 0
+research pin and were not re-certified. References inspected: `app/scrapers/vizio.py`,
+`app/scrapers/base.py` (`resolve`), README Sources / Source Notes. Vizio still uses
+the anonymous first-party catalog and inherited unchanged-URL resolver; ArixTV
+independently refetches current metadata at tune time instead of persisting URLs.
+
+The public response contained 472 channels, explicit protection fields and one
+licensed/token-gated NFL entry. API requests accepted ArixTV's own User-Agent and
+JSON Accept header without credentials. Discovery needs no guide calls. Sample
+CDN probes were mixed; two opt-in Go smoke attempts did not certify live Resolve
+(one inspector limitation corrected offline, then catalog timeout). API quotas,
+URL lifetime and remote-client egress compatibility remain unestablished.
+[Vizio protocol/support notes](providers/VIZIO.md) record counts, classification,
+headers, region/session assumptions, exact live instructions and limitations.
+No upstream source or raw provider captures were incorporated.

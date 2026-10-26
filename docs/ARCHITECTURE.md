@@ -81,7 +81,8 @@ fresh upstream URL
 Phase 1 implements `internal/channel`, `provider`, `auth`, `logsafe`,
 `atomicfile`, `statefile`, `filelock`, and `store`, alongside the Phase 0 CLI/config.
 Phase 2 adds `internal/server` and `internal/servicenotify`. Refresh coordination,
-file playlist generation, relay integration and real providers remain planned.
+file playlist generation and relay integration remain planned. Phase 3A adds
+`internal/provider/vizio` and the production wiring in `internal/provider/builtin`.
 Linux deployment assets are reserved under `deploy/linux/` and do not affect
 configuration validation or version reporting on macOS.
 
@@ -264,8 +265,9 @@ relay-only; licensed DRM and unknown classifications cannot become direct.
 
 `provider.Registry` is built once, defensively copies metadata and sorts listings.
 It exposes the small context-aware Discover/Resolve runtime interface plus
-separate metadata (status, access, unofficial mirror and capabilities). No real
-runtime is registered. Operational enabling requires anonymous-free access and
+separate metadata (status, access, unofficial mirror and capabilities).
+`builtin.NewRegistry` registers the experimental Vizio runtime without network I/O.
+Operational enabling requires anonymous-free access and
 an available stable/experimental runtime; mirror-based metadata cannot be stable
 by default. There are no global registries or hidden goroutines.
 
@@ -309,7 +311,7 @@ lifecycle CLI or public HTTP auth handler is added in Phase 1.
 ## Phase 2 HTTP architecture
 
 `cli.RunContext` and the signal-aware entry point load strict config, build the
-currently empty runtime registry and initialize `server.App`. Startup checks token
+production runtime registry and initialize `server.App`. Startup checks token
 state and enabled snapshots/refresh metadata without writing state. Unknown or
 out-of-scope enabled runtimes fail operational validation. A valid empty registry
 serves local health; there are no fake/demo production providers.
@@ -375,3 +377,16 @@ It indicates main-loop responsiveness, not upstream playback health. Socket writ
 have a short deadline. No libsystemd or unit files were added. Protocol references:
 [sd_notify](https://www.freedesktop.org/software/systemd/man/latest/sd_notify.html)
 and [sd_watchdog_enabled](https://www.freedesktop.org/software/systemd/man/latest/sd_watchdog_enabled.html).
+
+## Phase 3A reference provider
+
+Vizio is the sole production runtime, wired by `provider/builtin`; provider
+interfaces and Phase 1/2 schemas, stores, serving/network policies are unchanged.
+Constructors do no I/O. Discover returns nil/error for incomplete candidates;
+only the later coordinator will decide when to commit a complete snapshot.
+Resolve fetches current provider metadata and bounded HLS manifests, returning an
+ephemeral validated media URL. The HTTP layer still only emits 302 responses.
+This is provider-local format/protection inspection, not a media data plane.
+See [Vizio notes](providers/VIZIO.md) for classification limits, resource budgets
+and the deliberately incomplete live certification. No refresh scheduler,
+coordinator or second provider was introduced.

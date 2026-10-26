@@ -108,7 +108,7 @@ Implement the portable core models and safe local state handling.
 
 ## Phase 2 — HTTP server and network policy
 
-**Phase 2 complete; awaiting owner review.** Serve, separate listener policies,
+**Phase 2 approved by owner.** Serve, separate listener policies,
 strict routes, explicit origins, bounded resource limits, immutable catalog reload
 and managed shutdown are implemented and validated. Phase 1 schema/LKG/corrupt-
 state/durability contracts are unchanged. See `docs/PHASE2_REPORT.md` for commands,
@@ -145,6 +145,29 @@ Serve protected playlists and resolver URLs without proxying media.
 - Resolver responses can return a mocked 302.
 
 ## Phase 3 — First providers
+
+### Phase 3A — Vizio reference provider (complete; awaiting owner review)
+
+Owner authorized **Vizio (`vizio`) only**. The broader Phase 3 exit gate below
+does not authorize a second provider. Preserve the approved Phase 2 contracts.
+
+- [x] Reinspect current FastChannels default branch and anonymous public catalog.
+- [x] Independently implement bounded anonymous discovery and fresh resolution.
+- [x] Register experimental, anonymous-free, first-party Vizio runtime.
+- [x] Add synthetic fixtures, offline failure tests and server compatibility test.
+- [x] Add and run explicitly opt-in, low-volume live smoke test (live Resolve unverified).
+- [x] Update protocol evidence, provider documentation and completion report.
+- [x] Run Go 1.27.3 formatting, vet, tests/race, modules, scanner and cross-builds.
+
+Current upstream pin: `40f5903cb43979e00e8d6cc7186d855c93eed6b1`.
+Anonymous discovery observed 472 channels. Offline tests and required local checks
+pass; opt-in live Resolve did not pass certification (optional subtitle rejection
+corrected with regression coverage, then catalog timeout on re-run). Keep Vizio
+experimental. See `docs/PHASE3A_REPORT.md` and `docs/providers/VIZIO.md` for exact
+results, bounded muxed-variant selection, freshness cost and validation limits.
+
+No refresh coordinator/CLI, scheduling, installer, EPG or media relay is part of
+3A. Stop for owner review before another provider or Phase 4 work.
 
 ### Goals
 Prove the provider interface using a small number of stable free providers selected from the FastChannels migration inventory and re-verified against current upstream behavior.

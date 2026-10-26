@@ -61,7 +61,8 @@ no DNS/provider requests. Examples contain no enabled providers or tokens.
 Later operational commands can call `Config.ValidateProviders(registry)` in
 addition to structural validation. It rejects missing runtimes, disabled/unsupported
 sources, duplicates, and all account-based sources. `config validate` keeps syntax-only provider-ID behavior. `serve` additionally
-invokes operational registry validation; the CLI registry is empty in Phase 2.
+invokes operational registry validation. Phase 3A registers the experimental
+anonymous/free `vizio` runtime; no other real runtime is available.
 Provider IDs are shared with the domain/store validation: lowercase letter first,
 then letters, digits, `_` or `-`, at most 64 bytes.
 
@@ -138,8 +139,11 @@ contains every HTTP default. No plaintext public/internal secret config was adde
 `relay.enabled` does not provision credentials or enable a relay engine in Phase 2.
 
 Only enabled, available anonymous provider runtimes are operationally accepted.
-The production CLI has none yet, so `providers.enabled=[]` is the usable Phase 2
-binary configuration. Test/embedding code can pass a mock registry to exercise
+The production CLI now accepts `providers.enabled=["vizio"]`, or the default empty
+list. Vizio needs no country, account or provider-specific TOML settings: it uses
+the anonymous US mobile catalog without geo spoofing. Enabling it only permits
+serving existing snapshots; it does not discover/refresh in the daemon. The refresh
+CLI remains Phase 4. Test/embedding code can pass a mock registry to exercise
 persisted snapshots. Missing enabled snapshots permit degraded/empty serving;
 corrupt/unsupported snapshot, token or observation state fails startup without
 rewriting files. The catalog is capped at 100000 aggregate channels. Configuration/provider-registry changes require restart; token creation, rotation
