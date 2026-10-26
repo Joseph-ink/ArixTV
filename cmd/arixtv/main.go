@@ -1,7 +1,10 @@
 package main
 
 import (
+	"context"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/Joseph-ink/ArixTV/internal/cli"
 )
@@ -14,7 +17,10 @@ var (
 )
 
 func main() {
-	os.Exit(cli.Run(os.Args[1:], os.Stdout, os.Stderr, cli.BuildInfo{
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	code := cli.RunContext(ctx, os.Args[1:], os.Stdout, os.Stderr, cli.BuildInfo{
 		Version: version, Commit: commit, BuildDate: buildDate,
-	}))
+	})
+	stop()
+	os.Exit(code)
 }

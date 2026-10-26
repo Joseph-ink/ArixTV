@@ -135,9 +135,10 @@ arixtv-relay.service
 
 Phase 1 provides typed channel/stream classifications, a provider registry,
 strict configuration, secret-redacting logging, hashed token storage, versioned
-atomic snapshots, refresh metadata and Linux/macOS refresh locks. The CLI still
-exposes only `version`, `config validate` and help. HTTP serving, provider discovery,
-refresh coordination, playlist generation and installation remain planned.
+atomic snapshots, refresh metadata and Linux/macOS refresh locks. Phase 2 adds `serve`, separate loopback/LAN policies, protected Direct M3U output,
+tune-time 302 resolution, bounded limits, snapshot reload and graceful shutdown.
+Real provider discovery, refresh coordination, file playlist generation, relay
+integration and installation remain planned. No real providers are implemented.
 
 Requires Go 1.27.3 or newer. CI and release builds use Go 1.27.3. Build and run locally:
 
@@ -145,6 +146,7 @@ Requires Go 1.27.3 or newer. CI and release builds use Go 1.27.3. Build and run 
 go build -o bin/arixtv ./cmd/arixtv
 ./bin/arixtv version
 ./bin/arixtv config validate --config config.example.toml
+./bin/arixtv serve --config config.example.toml
 ```
 
 `config validate` defaults to `./config.toml` on every platform. An eventual
@@ -152,10 +154,10 @@ Linux service will supply `/etc/arixtv/config.toml` explicitly. To create a loca
 configuration, copy `config.example.toml` to `config.toml` (ignored by Git).
 Validation reads the file without writing state or making network requests.
 See [configuration behavior](docs/CONFIGURATION.md) for defaults and limits, and
-the [Phase 1 report](docs/PHASE1_REPORT.md) for state/security design and validation.
+the [Phase 2 report](docs/PHASE2_REPORT.md) for HTTP design, routes and validation.
 
-The only commands available are `version`, `config validate`, and help. Exit
-codes are 0 for success/help, 1 for configuration failure, and 2 for usage errors.
+The available commands are `version`, `config validate`, `serve`, and help. Exit
+codes are 0 for success/help, 1 for configuration/startup/runtime failure, and 2 for usage errors.
 Development version metadata defaults to `dev` / `unknown` / `unknown`; build
 systems can set `main.version`, `main.commit`, and `main.buildDate` with Go
 `-ldflags -X`. Release publishing remains Phase 8.
@@ -205,3 +207,24 @@ See:
 ## License
 
 License has not yet been selected. Do not assume reuse rights until a repository license is explicitly added.
+
+
+## Phase 2 serving notes
+
+The example starts an empty loopback service at `127.0.0.1:8787`; `/healthz` is
+local-only. With no provisioned tokens or providers, public requests are denied.
+The binary's provider registry remains empty until Phase 3; specifying unknown
+or unavailable enabled providers is a safe startup error. Token lifecycle CLI
+commands remain staged; tests provision tokens through the Phase 1 store API.
+
+LAN mode additionally requires explicit listeners, allowed CIDRs and
+`lan.public_origin`, for example `http://192.168.50.10:8787`. Remote Direct requires
+an HTTPS `remote.public_origin` and the documented one-hop Nginx headers. Incoming
+Host/forwarded-host values never determine playlist URLs. Both modes use the
+configured `remote.direct_path` prefix (default `/direct`) without proxy rewrites.
+
+The optional internal resolver is disabled in the CLI pending Phase 7 credential
+setup; the server exposes a separate injected validator for integration tests and
+future relay setup. No relay playlist or media proxy is implemented. See
+[configuration](docs/CONFIGURATION.md), [Nginx](docs/NGINX.md) and
+[security](docs/SECURITY.md) for the full deployment contract.

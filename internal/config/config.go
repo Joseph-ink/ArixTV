@@ -13,6 +13,7 @@ import (
 const maxConfigBytes = 1 << 20
 
 type Config struct {
+	HTTP    HTTPConfig `toml:"http"`
 	Storage struct {
 		DataDir  string `toml:"data_dir"`
 		StateDir string `toml:"state_dir"`
@@ -23,6 +24,7 @@ type Config struct {
 	} `toml:"server"`
 	LAN struct {
 		Enabled         bool     `toml:"enabled"`
+		PublicOrigin    string   `toml:"public_origin"`
 		ListenAddresses []string `toml:"listen_addresses"`
 		AllowNetworks   []string `toml:"allow_networks"`
 	} `toml:"lan"`
@@ -51,6 +53,7 @@ func defaults() Config {
 	c.Storage.StateDir = "./state"
 	c.Server.LoopbackAddress = "127.0.0.1"
 	c.Server.Port = 8787
+	c.HTTP = HTTPConfig{ReadHeaderTimeout: "5s", ReadTimeout: "15s", WriteTimeout: "30s", IdleTimeout: "60s", ResolveTimeout: "10s", ShutdownTimeout: "10s", ReloadInterval: "5s", MaxHeaderBytes: 16384, MaxConnections: 128, ResolverConcurrency: 8, PlaylistPerMinute: 30, ResolvePerMinute: 60, RateBurst: 5, RateMaxClients: 1024, RateClientTTL: "10m"}
 	c.Remote.DirectPath = "/direct"
 	c.Remote.TrustedProxies = []string{"127.0.0.1/32"}
 	c.Refresh.Interval = "6h"

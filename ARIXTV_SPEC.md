@@ -880,6 +880,7 @@ port = 8787
 [lan]
 enabled = true
 listen_addresses = ["192.168.50.10"]
+public_origin = "http://192.168.50.10:8787"
 allow_networks = ["192.168.50.0/24"]
 
 [remote]
@@ -1079,3 +1080,50 @@ V1 should satisfy:
 24. Complete uninstall removes ArixTV-created files/services.
 25. CI is green.
 26. No browser, Redis, Node.js, FFmpeg, database-server dependency exists in ArixTV core.
+
+
+## 46. Approved Phase 2 serving contract
+
+Phase 2 adds `arixtv serve [--config PATH]`, using explicit loopback/LAN listener
+policies and the Phase 1 schema version 1 stores. Corrupt/unsupported state is
+preserved and fails closed; LKG, post-rename DurabilityError and trusted local
+POSIX filesystem semantics remain unchanged. No real provider, refresh scheduler,
+media proxy, generated relay playlist, TLS manager or installer is added.
+
+Public paths are the configured Direct prefix plus `/s/<token>/playlist.m3u` and
+`/s/<token>/play/<provider>/<channel>`. LAN uses socket IP + token, while Remote
+Direct uses a loopback backend and mandatory token. Only trusted peers may supply
+the documented single-hop Nginx IP/proto convention. Advertised URLs use explicit
+LAN HTTP / remote HTTPS origins; incoming Host/forwarded-host values are ignored.
+Both modes use the same Direct prefix. Strict paths never redirect/canonicalize
+secret-bearing input and reject percent-escaped delimiters/aliases, dot/empty
+components, backslashes and controls. Non-path-safe opaque channel IDs use a
+canonical `~`+base64url component.
+
+Public playlists include only clear_direct channels in deterministic order,
+without EPG/XMLTV fields or upstream playback URLs, with no-store headers. Text is
+written incrementally; no per-client full-playlist buffer or file write is needed.
+Resolve validates the snapshot channel and returned ephemeral Stream and emits
+only a zero-body 302 Location. Invalid auth/routes/channel classes are 404;
+temporary provider failures/capacity errors are sanitized 503 with Retry-After 30.
+Public routes accept only GET/HEAD without request bodies.
+
+Health/internal paths are loopback-listener and loopback-peer only and reject
+forwarding metadata. Internal authentication is a distinct injected validator,
+using an `irv_` namespace separate from public tokens and disabled in the CLI until
+Phase 7 secret setup. Internal resolution may select clear_direct or clear_relay_only;
+protected/unknown content is excluded. No relay.m3u is generated in Phase 2.
+
+Explicit HTTP timeouts, header limits, bounded per-IP rate buckets, a shared TCP
+connection cap and nonqueued resolver admission bound resource use. Default
+limits/config validation are documented in CONFIGURATION.md. Snapshot/observation
+stamps are polled; completed valid generations replace an immutable catalog.
+Failed runtime reloads keep LKG and degrade local health, without rewriting disk.
+Aggregate catalog capacity is 100000 channels. Health reports safe counts/states,
+generations and last-success timestamps, with stale age after two configured
+refresh intervals; it does not initiate refresh or claim upstream playback health.
+
+SIGINT/SIGTERM cancels contexts, stops listeners and applies a bounded common
+Shutdown deadline. Linux optionally sends READY=1, WATCHDOG=1 and STOPPING=1 through
+its service-manager socket; Darwin uses a no-op implementation. Final Linux unit
+files remain Phase 5. Phase 3 real provider implementations require separate review.

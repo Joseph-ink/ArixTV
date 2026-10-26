@@ -76,9 +76,9 @@ Establish a clean Go repository that builds locally and in CI before provider wo
 
 ## Phase 1 — Core domain and state
 
-**Phase 1 complete; awaiting owner review.** Domain/state foundations, deterministic
+**Phase 1 approved by owner.** Domain/state foundations, deterministic
 failure tests, race checks and Go 1.27.3 cross-builds are complete. No HTTP server,
-refresh coordinator, provider runtime or lifecycle CLI was implemented. See
+refresh coordinator, provider runtime or lifecycle CLI was implemented in Phase 1. See
 `docs/PHASE1_REPORT.md` for exact commands and design limits.
 
 ### Goals
@@ -108,26 +108,35 @@ Implement the portable core models and safe local state handling.
 
 ## Phase 2 — HTTP server and network policy
 
+**Phase 2 complete; awaiting owner review.** Serve, separate listener policies,
+strict routes, explicit origins, bounded resource limits, immutable catalog reload
+and managed shutdown are implemented and validated. Phase 1 schema/LKG/corrupt-
+state/durability contracts are unchanged. See `docs/PHASE2_REPORT.md` for commands,
+results and deployment decisions. No real providers or media proxy were added.
+
 ### Goals
 Serve protected playlists and resolver URLs without proxying media.
 
 ### Tasks
-- [ ] Loopback listener.
-- [ ] Optional explicit LAN listeners.
-- [ ] LAN CIDR ACL.
-- [ ] Public direct prefix `/direct/`.
-- [ ] Protected playlist route.
-- [ ] Protected playback resolver route.
-- [ ] Internal loopback-only relay resolver route.
-- [ ] Trusted proxy handling.
-- [ ] Ignore forwarded headers from untrusted peers.
-- [ ] Request method restrictions.
-- [ ] HTTP server timeouts and header limits.
-- [ ] Basic rate limiting.
-- [ ] `/healthz` loopback-only endpoint.
-- [ ] Snapshot reload without restart.
-- [ ] Optional systemd notify/watchdog support on Linux.
-- [ ] Tests for ACL, auth, 404 behavior, trusted proxy behavior.
+- [x] `arixtv serve --config PATH`, SIGINT/SIGTERM and bounded graceful shutdown.
+- [x] Explicit advertised origins; deterministic clear-direct-only HTTP M3U.
+- [x] Bounded accepted connections and global nonqueued resolver work.
+- [x] Loopback listener.
+- [x] Optional explicit LAN listeners.
+- [x] LAN CIDR ACL.
+- [x] Public direct prefix `/direct/`.
+- [x] Protected playlist route.
+- [x] Protected playback resolver route.
+- [x] Internal loopback-only relay resolver route.
+- [x] Trusted proxy handling.
+- [x] Ignore forwarded headers from untrusted peers.
+- [x] Request method restrictions.
+- [x] HTTP server timeouts and header limits.
+- [x] Basic rate limiting.
+- [x] `/healthz` loopback-only endpoint.
+- [x] Snapshot reload without restart.
+- [x] Optional systemd notify/watchdog support on Linux.
+- [x] Tests for ACL, auth, 404 behavior, trusted proxy behavior.
 
 ### Exit criteria
 - LAN requests require valid network + token.

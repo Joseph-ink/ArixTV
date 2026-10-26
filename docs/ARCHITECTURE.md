@@ -80,7 +80,8 @@ fresh upstream URL
 
 Phase 1 implements `internal/channel`, `provider`, `auth`, `logsafe`,
 `atomicfile`, `statefile`, `filelock`, and `store`, alongside the Phase 0 CLI/config.
-HTTP, playlist generation, refresh coordination and real providers remain planned.
+Phase 2 adds `internal/server` and `internal/servicenotify`. Refresh coordination,
+file playlist generation, relay integration and real providers remain planned.
 Linux deployment assets are reserved under `deploy/linux/` and do not affect
 configuration validation or version reporting on macOS.
 
@@ -278,7 +279,7 @@ the persistence layer cannot detect a missing upstream page declared complete.
 Successful generation/count/timestamps derive from the snapshot. Separate refresh
 observations record the latest attempt, fixed safe error code and health, referencing
 the corresponding generation. Older observations cannot mask a newer success.
-There is no multi-file transaction or HTTP status endpoint. Snapshot reads are
+There is no multi-file transaction. Phase 2 consumes these values for local health. Snapshot reads are
 bounded at 16 MiB, token/observation reads at 1 MiB, and JSON rejects duplicate,
 unknown and trailing data. Single-file readers always see a complete old or new
 version; files are not cached in mutable global state.
@@ -303,3 +304,74 @@ local paths; network filesystems and hostile local writers are not supported.
 is returned from creation/rotation as a redacting `Secret` wrapper with explicit
 `Reveal`. Token mutations use process locks and the same atomic replacement. No
 lifecycle CLI or public HTTP auth handler is added in Phase 1.
+
+
+## Phase 2 HTTP architecture
+
+`cli.RunContext` and the signal-aware entry point load strict config, build the
+currently empty runtime registry and initialize `server.App`. Startup checks token
+state and enabled snapshots/refresh metadata without writing state. Unknown or
+out-of-scope enabled runtimes fail operational validation. A valid empty registry
+serves local health; there are no fake/demo production providers.
+
+Each listener carries an explicit kind. The loopback bind supports Remote Direct,
+local health and the future internal resolver. Explicit LAN binds expose Direct
+only, enforcing actual socket IP + token. All binds complete before readiness;
+failed startup closes earlier sockets. The embedding `Serve` boundary also checks
+loopback/LAN binding addresses. Wildcards are never loopback bindings.
+
+A small explicit parser accepts exact GET/HEAD routes, without ServeMux cleaning
+or redirects. Percent-escaped paths, duplicate separators, dot components,
+backslashes, controls, non-ASCII path components, query strings and absolute-form
+request targets are denied. Readable unreserved ASCII channel IDs remain literal;
+other opaque IDs are represented as `~` plus canonical base64url. Thus IDs that
+contain a slash can be addressed without encoded path delimiters. Decoding only
+produces a lookup key, never a filesystem path.
+
+M3U output is sorted by provider/channel identity and includes validated
+`clear_direct` channels only. URLs use explicit LAN/remote origins and the same
+configured Direct prefix. No Host/forwarded-host value is consulted. The response
+is no-store, includes no EPG/guide fields, and is written incrementally to avoid a
+complete playlist allocation per client; HEAD computes the same Content-Length.
+No generated playlist file or resolved upstream URL is persisted by HTTP serving.
+
+Tune-time resolution performs policy, authentication, strict lookup, classification,
+runtime lookup, concurrency admission and context-bounded Resolve. It validates
+fresh stream classifications/expiry and emits a bodyless 302 with Location. No
+media request is made by the HTTP layer. Errors/panics become sanitized 503s;
+unsupported/unknown public channels are 404. Internal resolution can additionally
+use `clear_relay_only` channels, but still excludes all protected/unknown cases.
+
+The internal validator is a separate interface with an `irv_` namespace, distinct
+from public `atv_` tokens. CLI credential setup is intentionally deferred to Phase 7,
+so internal routes default disabled. No public token can substitute. Health/internal
+routes require a loopback listener and socket peer, and reject forwarded metadata.
+
+A bounded per-IP limiter holds pre-auth, playlist and resolver buckets. Only actual
+LAN peers or strictly validated one-hop proxy clients identify buckets. Extra
+connections close before handler creation; active resolver slots have no waiting
+queue. Invalid authentication remains 404, even on pre-auth admission denial;
+authenticated class limits use 429, and full resolver capacity uses 503.
+
+`catalog` polls enabled snapshot/observation inode/mtime/size stamps, parses only
+changed files using Phase 1 strict stores, and atomically publishes immutable views.
+It caps aggregate cached channels at 100000. Startup corrupt state fails closed;
+runtime corruption/deletion/regression retains in-memory LKG and marks health
+unavailable/degraded. Disabled providers are not scanned. Temporary files are not
+candidates. Snapshot and observation races are retried on later polls; no disk state
+is rewritten. Health includes persisted refresh state and derived stale ages (>2
+configured refresh intervals), which does not trigger provider work.
+
+Cancellation stops new work, cancels server/provider contexts, closes listeners and
+uses one bounded Shutdown deadline for all servers. On deadline, connections are
+force-closed and a safe error returns. Providers must honor context; Go cannot kill
+an arbitrary uncooperative provider function, while the CLI process exits when
+serving returns. All owned Serve/poll/watchdog goroutines are joined/stopped.
+
+The optional Linux notifier uses Unix datagrams for READY, WATCHDOG and STOPPING;
+Darwin is a no-op. WATCHDOG_PID is honored and heartbeat ticks at half WATCHDOG_USEC
+in the main reload/service loop, not an unconditional independent background loop.
+It indicates main-loop responsiveness, not upstream playback health. Socket writes
+have a short deadline. No libsystemd or unit files were added. Protocol references:
+[sd_notify](https://www.freedesktop.org/software/systemd/man/latest/sd_notify.html)
+and [sd_watchdog_enabled](https://www.freedesktop.org/software/systemd/man/latest/sd_watchdog_enabled.html).

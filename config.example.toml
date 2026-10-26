@@ -1,4 +1,4 @@
-# Sanitized foundation example. No providers or server are implemented yet.
+# Sanitized Phase 2 example. The HTTP server is available; no real providers exist.
 # Omitted fields use defaults; local config.toml files are ignored by Git.
 [storage]
 data_dir = "./data"
@@ -10,6 +10,8 @@ port = 8787
 
 [lan]
 enabled = false
+# Required when enabled, for example http://192.168.50.10:8787
+public_origin = ""
 listen_addresses = []
 allow_networks = []
 
@@ -18,6 +20,23 @@ enabled = false
 public_origin = ""
 direct_path = "/direct"
 trusted_proxies = ["127.0.0.1/32"]
+
+[http]
+read_header_timeout = "5s"
+read_timeout = "15s"
+write_timeout = "30s"
+idle_timeout = "60s"
+resolve_timeout = "10s"
+shutdown_timeout = "10s"
+reload_interval = "5s"
+max_header_bytes = 16384
+max_connections = 128
+resolver_concurrency = 8
+playlist_per_minute = 30
+resolve_per_minute = 60
+rate_burst = 5
+rate_max_clients = 1024
+rate_client_ttl = "10m"
 
 [refresh]
 interval = "6h"

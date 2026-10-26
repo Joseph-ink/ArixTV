@@ -13,6 +13,9 @@ import (
 )
 
 func (c Config) Validate() error {
+	if err := c.validateHTTP(); err != nil {
+		return err
+	}
 	for _, dir := range []string{c.Storage.DataDir, c.Storage.StateDir} {
 		if strings.TrimSpace(dir) == "" || strings.ContainsAny(dir, "\x00\r\n") {
 			return errors.New("storage paths must be nonempty local paths")

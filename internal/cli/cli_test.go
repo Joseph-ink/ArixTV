@@ -32,7 +32,7 @@ func TestRun(t *testing.T) {
 		{"help", []string{"--help"}, 0, usage},
 		{"config help", []string{"config", "validate", "--help"}, 0, usage},
 		{"no command", nil, 2, ""},
-		{"future command", []string{"serve"}, 2, ""},
+		{"future command", []string{"refresh"}, 2, ""},
 		{"version extra", []string{"version", "extra"}, 2, ""},
 		{"missing subcommand", []string{"config"}, 2, ""},
 		{"unknown subcommand", []string{"config", "show"}, 2, ""},

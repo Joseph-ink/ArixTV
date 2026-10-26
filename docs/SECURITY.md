@@ -207,7 +207,7 @@ representations redact. `Reveal()` is explicit and must be used only to deliver
 the new token to the operator. Neither listing nor reading state returns plaintext.
 Keep token names descriptive and non-secret. Secret strings, once revealed, cannot
 be automatically erased from the Go heap; do not retain or log them. Lifecycle
-CLI commands and HTTP authorization remain later work.
+CLI commands remain later work; Phase 2 wires token verification into Direct HTTP.
 
 `logsafe.New` uses the standard-library JSON slog handler behind sanitization:
 sensitive attributes/groups (Authorization, cookies, tokens, secrets, sessions,
@@ -272,3 +272,69 @@ The current vulnerability database is intentionally live, so findings may change
 without code changes. This is a reproducible scanner configuration, not an
 immutable database snapshot. A network/scanner failure fails the job. Normal unit
 tests have no network dependency. See the [Go vulnerability management guide](https://go.dev/doc/security/vuln/).
+
+
+## Phase 2 network and HTTP controls
+
+The approved Phase 1 schema version, LKG, fail-closed corrupt-state handling,
+post-rename DurabilityError and trusted local POSIX filesystem boundaries remain
+unchanged. HTTP is a read-only consumer of snapshots/tokens/refresh observations.
+No public route writes state, initiates refresh or fetches media.
+
+Loopback and LAN listeners use separate handlers. LAN requires actual socket peer
+CIDR membership and a valid token; forwarded headers cannot affect this ACL. Health
+and internal routes are absent from LAN policy regardless of peer headers/tokens.
+The loopback listener is bound to a literal loopback IP and checks its socket peer.
+Only configured trusted peers may supply one X-Forwarded-For IP and a literal
+HTTPS proto claim. Unexpected trusted values are denied; untrusted forwarded
+values are ignored. Forwarded/Real-IP/forwarded-host fields are never alternatives.
+The documented Nginx deployment exposes only Direct, never local routes.
+
+Authentication failures, malformed/unknown routes, unsuitable channels, unsupported
+methods and requests with bodies return the same fixed 404 response. Bodies are
+not read and connections carrying bodies are closed. Strict ASCII path parsing
+rejects normalization tricks and all percent-escaped path forms without redirect.
+Opaque channel IDs use a canonical base64url path component when needed. Tokens
+are checked by the Phase 1 store on each public request, so creation/rotation/
+revocation is immediate and corrupt token state denies access without reset.
+
+The Direct M3U contains only clear_direct resolver URLs built from explicit
+configuration, never arbitrary Host/proxy values. It has no EPG/XMLTV metadata or
+signed upstream playback entries. Request-specific tokenized playlist content is
+not cached or written to disk. Public and internal redirects have zero-length
+bodies. The internal validator defaults disabled and requires a separate `irv_`
+credential namespace/hash, so public `atv_` tokens cannot substitute. Clear relay-
+only channels are usable through authenticated loopback internal resolution only;
+full relay setup/credential provisioning remains Phase 7.
+
+Rate limiting is bounded to configured client capacity. Pre-auth admission uses
+four times the larger class refill and four times burst to bound auth-state I/O;
+failures here remain 404, independent of token validity. Authenticated playlist/
+resolver exhaustion returns 429 with Retry-After: 30. Idle entries are evicted
+only at capacity; new identities fail admission if all entries are active.
+TTL must cover full burst refill so eviction cannot prematurely restore credits.
+Actual/validated effective IPs identify clients; ports and untrusted headers do not.
+Global TCP and active resolver limits bound HTTP/provider work, with no extra
+resolver work queue or per-request background provider goroutine. Deadlines are
+explicit. Extra TCP connections are closed; full resolver capacity returns 503.
+
+Enabled snapshots and refresh observations load through strict Phase 1 readers.
+Corrupt/unsupported startup state fails startup without modification. Runtime bad
+updates retain the last valid in-memory view, expose degraded local health and are
+retried; they never replace valid channels with empty/corrupt data. The service
+polls stamps and atomically swaps complete immutable views. No fsnotify, provider
+scheduler or new state schema is involved. Health lists counts, safe IDs, states,
+generations and timestamps only; no tokens, URLs, paths or raw provider errors.
+
+All HTTP logging uses logsafe. Messages carry fixed request/response classes,
+listener policy, latency and diagnostic codes. Neither full request URIs, channel
+IDs, cookies/Authorization, internal secrets nor redirect Locations are logged.
+Default net/http transport/panic text is suppressed in favor of a fixed code.
+Denied/rate-limited requests use Debug level to avoid routine denial log floods.
+Provider failures/panics produce sanitized 503s, never raw upstream responses.
+
+SIGINT/SIGTERM cancellation denies new work, stops accept, cancels resolver
+contexts and bounds Shutdown. A context-ignoring provider cannot be killed inside
+Go; future providers must honor context. On deadline, sockets close and the CLI
+exits with a safe error rather than waiting indefinitely. The optional Linux
+watchdog supervises the main service loop, not successful provider/CDN playback.

@@ -29,6 +29,7 @@ loopback_address = "::1"
 port = 9876
 [lan]
 enabled = true
+public_origin = "http://192.168.50.10:9876"
 listen_addresses = ["192.168.50.10", "fd00::10"]
 allow_networks = ["192.168.50.0/24", "fd00::/64"]
 [remote]
