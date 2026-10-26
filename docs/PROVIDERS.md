@@ -79,10 +79,12 @@ Suggested playback capability:
 
 ## V1 research pool
 
-Phase 3A implements **Vizio WatchFree+ (`vizio`) only**, registered as experimental,
-anonymous/free and independent of unofficial mirrors. See
+Phase 3A implements **Vizio WatchFree+ (`vizio`)**; Phase 3B adds **Xumo Play
+(`xumo`)**. Both are experimental, anonymous/free and independent of unofficial
+mirrors. Vizio remains experimental with live tune-time playback unverified. See
 [Vizio protocol/support notes](providers/VIZIO.md) and the
-[Phase 3A report](PHASE3A_REPORT.md). The broader historical upstream inventory is
+[Phase 3A report](PHASE3A_REPORT.md), plus [Xumo notes](providers/XUMO.md) and
+[Phase 3B report](PHASE3B_REPORT.md). The broader historical upstream inventory is
 pinned to commit `7e61c1ef127f7119326eb98381726d6f7cfaa56d` in the mapping.
 Its initial research priority is Vizio, Xumo and Plex; LG is a reserve candidate.
 Zeam's IP/UA-bound playback, STIRR's proxy behavior, and VIDAA's signed-app
@@ -93,7 +95,7 @@ Providers to investigate:
 
 | Provider | V1 intent |
 |---|---|
-| Xumo Play | candidate |
+| Xumo Play | experimental; one narrowly evidence-qualified Direct identity, other unverified entries unknown |
 | Plex | candidate |
 | Pluto TV | candidate |
 | Vizio WatchFree+ | experimental implementation; live Resolve not certified |

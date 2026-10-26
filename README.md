@@ -137,11 +137,13 @@ Phase 1 provides typed channel/stream classifications, a provider registry,
 strict configuration, secret-redacting logging, hashed token storage, versioned
 atomic snapshots, refresh metadata and Linux/macOS refresh locks. Phase 2 adds `serve`, separate loopback/LAN policies, protected Direct M3U output,
 tune-time 302 resolution, bounded limits, snapshot reload and graceful shutdown.
-Phase 3A adds the experimental anonymous **Vizio WatchFree+** runtime, using its
-first-party catalog and fresh HLS resolution. No other real providers are registered.
-See [Vizio support and live-test limitations](docs/providers/VIZIO.md).
+Phases 3A/3B add experimental anonymous **Vizio WatchFree+** and **Xumo Play**
+runtimes, using first-party catalogs and fresh HLS resolution. No other real
+providers are registered. Vizio remains experimental with live playback unverified.
+See [Vizio limitations](docs/providers/VIZIO.md) and
+[Xumo support and evidence limits](docs/providers/XUMO.md).
 Refresh coordination/CLI, file playlist generation, relay integration and
-installation remain planned. Enabling `vizio` does not initiate discovery; serving
+installation remain planned. Enabling a provider does not initiate discovery; serving
 consumes existing snapshots. The offline compatibility test demonstrates the full
 discovery → snapshot → protected M3U → bodyless 302 path.
 
@@ -218,7 +220,7 @@ License has not yet been selected. Do not assume reuse rights until a repository
 
 The example starts an empty loopback service at `127.0.0.1:8787`; `/healthz` is
 local-only. With no provisioned tokens or providers, public requests are denied.
-The binary registers experimental `vizio`; the example keeps it disabled.
+The binary registers experimental `vizio` and `xumo`; the example keeps both disabled.
 Specifying unknown or unavailable enabled providers is a safe startup error. Token lifecycle CLI
 commands remain staged; tests provision tokens through the Phase 1 store API.
 

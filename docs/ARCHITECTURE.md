@@ -266,7 +266,7 @@ relay-only; licensed DRM and unknown classifications cannot become direct.
 `provider.Registry` is built once, defensively copies metadata and sorts listings.
 It exposes the small context-aware Discover/Resolve runtime interface plus
 separate metadata (status, access, unofficial mirror and capabilities).
-`builtin.NewRegistry` registers the experimental Vizio runtime without network I/O.
+`builtin.NewRegistry` registers experimental Vizio and Xumo runtimes without network I/O.
 Operational enabling requires anonymous-free access and
 an available stable/experimental runtime; mirror-based metadata cannot be stable
 by default. There are no global registries or hidden goroutines.
@@ -380,7 +380,7 @@ and [sd_watchdog_enabled](https://www.freedesktop.org/software/systemd/man/lates
 
 ## Phase 3A reference provider
 
-Vizio is the sole production runtime, wired by `provider/builtin`; provider
+Vizio was the sole Phase 3A production runtime, wired by `provider/builtin`; provider
 interfaces and Phase 1/2 schemas, stores, serving/network policies are unchanged.
 Constructors do no I/O. Discover returns nil/error for incomplete candidates;
 only the later coordinator will decide when to commit a complete snapshot.
@@ -390,3 +390,20 @@ This is provider-local format/protection inspection, not a media data plane.
 See [Vizio notes](providers/VIZIO.md) for classification limits, resource budgets
 and the deliberately incomplete live certification. No refresh scheduler,
 coordinator or second provider was introduced.
+
+## Phase 3B second provider
+
+`provider/xumo` adds complete anonymous catalog discovery and a current-broadcast
+asset/source resolver. The registry now contains exactly `vizio` and `xumo`, both
+experimental. There is no core contract/schema, server, auth or store change.
+Discovery returns nil/error for incomplete results; the later coordinator remains
+responsible for successful snapshot commits. No scheduler or refresh CLI is added.
+
+The existing pure HLS inspector moved into `provider/hlsinspect`. Callers supply
+their absolute-URL policy; the inspector performs no networking, rewriting, key or
+segment fetch. Vizio keeps thin adapters preserving its errors and the existing
+first-muxed-variant policy; its tests and network/resolver behavior are unchanged.
+Xumo reuses that inspector with its own bounded optional JSON-pointer hop, current
+asset lifetime checks and transport. No generic provider-interface limitation was
+found. See [Xumo notes](providers/XUMO.md) for conservative evidence qualification,
+anonymous identity, API refresh hints, region and live-validation limits.

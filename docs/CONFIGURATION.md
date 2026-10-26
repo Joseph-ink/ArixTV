@@ -61,8 +61,8 @@ no DNS/provider requests. Examples contain no enabled providers or tokens.
 Later operational commands can call `Config.ValidateProviders(registry)` in
 addition to structural validation. It rejects missing runtimes, disabled/unsupported
 sources, duplicates, and all account-based sources. `config validate` keeps syntax-only provider-ID behavior. `serve` additionally
-invokes operational registry validation. Phase 3A registers the experimental
-anonymous/free `vizio` runtime; no other real runtime is available.
+invokes operational registry validation. Phases 3A/3B register experimental
+anonymous/free `vizio` and `xumo` runtimes; no other real runtime is available.
 Provider IDs are shared with the domain/store validation: lowercase letter first,
 then letters, digits, `_` or `-`, at most 64 bytes.
 
@@ -139,9 +139,12 @@ contains every HTTP default. No plaintext public/internal secret config was adde
 `relay.enabled` does not provision credentials or enable a relay engine in Phase 2.
 
 Only enabled, available anonymous provider runtimes are operationally accepted.
-The production CLI now accepts `providers.enabled=["vizio"]`, or the default empty
-list. Vizio needs no country, account or provider-specific TOML settings: it uses
-the anonymous US mobile catalog without geo spoofing. Enabling it only permits
+The production CLI accepts `providers.enabled=["vizio", "xumo"]`, either provider
+alone, or the default empty list. Neither needs provider-specific TOML settings.
+Vizio uses the anonymous US mobile catalog; Xumo uses the public US market 10006
+catalog with no fixed geo ID, country override or account configuration. Xumo's
+Direct classification currently covers only its documented reference identity;
+other unverified channels remain unknown. Enabling a provider only permits
 serving existing snapshots; it does not discover/refresh in the daemon. The refresh
 CLI remains Phase 4. Test/embedding code can pass a mock registry to exercise
 persisted snapshots. Missing enabled snapshots permit degraded/empty serving;

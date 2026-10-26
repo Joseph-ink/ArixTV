@@ -4,11 +4,10 @@ import (
 	"context"
 	"net/url"
 	"strconv"
-	"strings"
 	"time"
-	"unicode/utf8"
 
 	"github.com/Joseph-ink/ArixTV/internal/channel"
+	"github.com/Joseph-ink/ArixTV/internal/provider/hlsinspect"
 )
 
 const maxManifestBytes = 256 << 10
@@ -64,174 +63,27 @@ func (p *Provider) resolveHLS(ctx context.Context, raw string) (channel.Stream, 
 	return channel.Stream{}, ErrManifest
 }
 
+// Thin adapters preserve Vizio's existing error identities and URI policy.
 func inspectManifest(body string) (channel.DRM, string, error) {
-	if !utf8.ValidString(body) || strings.ContainsRune(body, '\x00') {
-		return "", "", ErrManifest
-	}
-	lines := strings.Split(strings.ReplaceAll(body, "\r\n", "\n"), "\n")
-	if len(lines) == 0 || lines[0] != "#EXTM3U" {
-		return "", "", ErrManifest
-	}
-	drm := channel.Clear
-	variant := ""
-	awaiting := false
-	master := false
-	media := false
-	target := false
-	segment := false
-	awaitingSegment := false
-	for _, raw := range lines[1:] {
-		line := strings.TrimSpace(raw)
-		if line == "" {
-			continue
-		}
-		if awaiting && !strings.HasPrefix(line, "#") {
-			if variant == "" {
-				variant = line
-			}
-			awaiting = false
-			continue
-		}
-		if !strings.HasPrefix(line, "#") {
-			if !awaitingSegment || !validKeyURI(line) {
-				return "", "", ErrManifest
-			}
-			segment = true
-			awaitingSegment = false
-			continue
-		}
-		switch {
-		case strings.HasPrefix(line, "#EXT-X-SESSION-KEY:"), strings.HasPrefix(line, "#EXT-X-KEY:"):
-			_, value, _ := strings.Cut(line, ":")
-			attrs, err := attributes(value)
-			if err != nil {
-				return "", "", err
-			}
-			switch attrs["METHOD"] {
-			case "NONE":
-			case "AES-128":
-				if format := attrs["KEYFORMAT"]; format != "" && format != "identity" {
-					return "", "", ErrUnavailable
-				}
-				// Classification only. Never fetch a key, regardless of encryption.
-				if !validKeyURI(attrs["URI"]) || needsRelay(attrs["URI"]) {
-					return "", "", ErrUnavailable
-				}
-				drm = channel.HLSStandardEncrypted
-			default:
-				return "", "", ErrUnavailable // SAMPLE-AES / protected or unknown systems
-			}
-		case strings.HasPrefix(line, "#EXT-X-MEDIA:"):
-			attrs, err := attributes(strings.TrimPrefix(line, "#EXT-X-MEDIA:"))
-			// Selecting a muxed variant intentionally omits optional subtitles.
-			// Separate audio/video would make that variant incomplete.
-			if err != nil || (attrs["URI"] != "" && attrs["TYPE"] != "SUBTITLES" && attrs["TYPE"] != "CLOSED-CAPTIONS") {
-				return "", "", ErrManifest
-			}
-		case strings.HasPrefix(line, "#EXT-X-STREAM-INF:"):
-			if awaiting {
-				return "", "", ErrManifest
-			}
-			master = true
-			awaiting = true
-		case strings.HasPrefix(line, "#EXTINF:"):
-			if awaitingSegment {
-				return "", "", ErrManifest
-			}
-			media = true
-			awaitingSegment = true
-		case strings.HasPrefix(line, "#EXT-X-TARGETDURATION:"):
-			n, err := strconv.Atoi(strings.TrimPrefix(line, "#EXT-X-TARGETDURATION:"))
-			if err != nil || n <= 0 {
-				return "", "", ErrManifest
-			}
-			target = true
-		case strings.HasPrefix(line, "#EXT-X-DEFINE:"):
-			return "", "", ErrManifest // no variable substitution
-		}
-	}
-	if awaiting || awaitingSegment || (master && (variant == "" || media)) || (!master && (!media || !target || !segment)) {
-		return "", "", ErrManifest
-	}
-	return drm, variant, nil
+	drm, variant, err := hlsinspect.Inspect(body, absoluteURI)
+	return drm, variant, inspectionError(err)
 }
-
-// Explicit IP binding is relay-only. Absence of such a marker is not proof of
-// cross-egress compatibility; experimental live validation must establish that.
-func needsRelay(raw string) bool {
-	u, err := url.Parse(raw)
-	if err != nil {
-		return false
-	}
-	for key, values := range u.Query() {
-		switch strings.ToLower(key) {
-		case "ip", "client_ip", "remote_ip", "request_ip":
-			for _, v := range values {
-				if v != "" {
-					return true
-				}
-			}
-		}
-	}
-	return false
+func needsRelay(raw string) bool  { return hlsinspect.NeedsRelay(raw) }
+func validKeyURI(raw string) bool { return hlsinspect.ValidURI(raw, absoluteURI) }
+func attributes(raw string) (map[string]string, error) {
+	values, err := hlsinspect.Attributes(raw)
+	return values, inspectionError(err)
 }
-
-func validKeyURI(raw string) bool {
-	u, err := url.Parse(raw)
-	if err != nil || raw == "" || u.User != nil || u.Fragment != "" || strings.ContainsAny(raw, "{}\\\r\n") {
-		return false
+func absoluteURI(raw string) bool { _, err := publicURL(raw); return err == nil }
+func inspectionError(err error) error {
+	switch err {
+	case nil:
+		return nil
+	case hlsinspect.ErrProtection:
+		return ErrUnavailable
+	default:
+		return ErrManifest
 	}
-	if u.IsAbs() {
-		_, err = publicURL(raw)
-		return err == nil
-	}
-	return u.Host == "" && !strings.HasPrefix(raw, "//")
-}
-
-// attributes parses the ordinary HLS attribute-list grammar, preserving quoted
-// commas and rejecting duplicate/unterminated values rather than guessing.
-func attributes(s string) (map[string]string, error) {
-	result := map[string]string{}
-	for s != "" {
-		key, rest, ok := strings.Cut(s, "=")
-		if !ok || key == "" {
-			return nil, ErrManifest
-		}
-		for _, r := range key {
-			if (r < 'A' || r > 'Z') && r != '-' && (r < '0' || r > '9') {
-				return nil, ErrManifest
-			}
-		}
-		if _, exists := result[key]; exists {
-			return nil, ErrManifest
-		}
-		var value string
-		if strings.HasPrefix(rest, `"`) {
-			end := strings.IndexByte(rest[1:], '"')
-			if end < 0 {
-				return nil, ErrManifest
-			}
-			end++
-			value = rest[1:end]
-			s = rest[end+1:]
-			if s != "" {
-				if s[0] != ',' {
-					return nil, ErrManifest
-				}
-				s = s[1:]
-				if s == "" {
-					return nil, ErrManifest
-				}
-			}
-		} else {
-			value, s, _ = strings.Cut(rest, ",")
-			if value == "" {
-				return nil, ErrManifest
-			}
-		}
-		result[key] = value
-	}
-	return result, nil
 }
 
 func expiry(s *channel.Stream, raw string, now time.Time) error {

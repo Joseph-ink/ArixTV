@@ -146,7 +146,7 @@ Serve protected playlists and resolver URLs without proxying media.
 
 ## Phase 3 — First providers
 
-### Phase 3A — Vizio reference provider (complete; awaiting owner review)
+### Phase 3A — Vizio reference provider (approved)
 
 Owner authorized **Vizio (`vizio`) only**. The broader Phase 3 exit gate below
 does not authorize a second provider. Preserve the approved Phase 2 contracts.
@@ -167,7 +167,36 @@ experimental. See `docs/PHASE3A_REPORT.md` and `docs/providers/VIZIO.md` for exa
 results, bounded muxed-variant selection, freshness cost and validation limits.
 
 No refresh coordinator/CLI, scheduling, installer, EPG or media relay is part of
-3A. Stop for owner review before another provider or Phase 4 work.
+3A. Owner approved the offline design; Vizio remains experimental with live
+playback unverified.
+
+### Phase 3B — Xumo only (complete; awaiting owner review)
+
+Owner authorized one new real provider: **Xumo (`xumo`)**. Preserve the approved
+core and Vizio behavior. No Plex/LG/other provider, Phase 4, scheduling or installer.
+
+- [x] Reinspect current FastChannels and anonymous provider-owned APIs.
+- [x] Independently implement complete discovery and fresh tune-time resolution.
+- [x] Share only the small provider-neutral HLS inspector; preserve Vizio tests.
+- [x] Register exactly experimental anonymous/free `vizio` and `xumo` runtimes.
+- [x] Add synthetic offline fixtures, failures and snapshot-reload/server test.
+- [x] Add explicitly gated, low-volume live smoke and report separately.
+- [x] Update Xumo evidence, provider notes and Phase 3B completion report.
+- [x] Run Go 1.27.3 formatting, vet, tests/race, coverage, modules, scanner/builds.
+
+Current upstream research pin: `376c1a69b8c11f6271e4557859fee75fe9ec5cb8`.
+Anonymous catalog request returned 454 entries without a fixed geo ID or device
+query parameters. Website reports US-only. A single CBS News reference stream's
+master/media were reachable without cookies or special playback headers; this
+does not certify other channels or cross-egress behavior. Keep both experimental.
+
+Final live smoke passed after two Xumo-local protocol interpretations (future
+refresh hints and opaque semicolon query values) were corrected with offline
+regressions. Discovery retains all 454 observed identities, but only one vetted
+reference qualifies Direct; 18 were DRM-marked and 435 other/unknown. Required
+offline tests/race checks pass; shared inspection does not change Vizio behavior
+or its tests. See `docs/PHASE3B_REPORT.md` and `docs/providers/XUMO.md`. Stop after
+Xumo for owner review; no Plex/LG/other provider or Phase 4 implementation.
 
 ### Goals
 Prove the provider interface using a small number of stable free providers selected from the FastChannels migration inventory and re-verified against current upstream behavior.

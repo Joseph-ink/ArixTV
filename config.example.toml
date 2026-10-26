@@ -1,5 +1,5 @@
-# Sanitized example. HTTP serving and experimental Vizio runtime are available.
-# Enabling vizio serves existing snapshots; discovery/refresh CLI is still planned.
+# Sanitized example. HTTP serving and experimental vizio/xumo runtimes are available.
+# Enabling providers serves existing snapshots; discovery/refresh CLI is still planned.
 # Omitted fields use defaults; local config.toml files are ignored by Git.
 [storage]
 data_dir = "./data"

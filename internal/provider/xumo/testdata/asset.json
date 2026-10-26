@@ -1,0 +1,8 @@
+{
+ "id":"EXAMPLE_SIMULCAST_1", "contentType":"SIMULCAST", "type":"Asset",
+ "providers":[{
+  "id":"example", "title":"Synthetic provider", "color":"#000000",
+  "sunrise":"Tue, 1 Jan 2030 00:00:00 +0000", "sunset":"Tue, 1 Jan 2030 01:00:00 +0000",
+  "sources":[{"uri":"https://cdn.example.test/master.m3u8?device=%5BdeviceID%5D&publisher=%5BPPID%5D&lat=%5BLIMITED_AD_TRACKING%5D&app=%5Bapp_bundle%5D&signature=FAKE_SOURCE_SIGNATURE","width":1280,"height":720,"lang":"en","hasEmbeddedCaptions":true,"produces":"application/x-mpegURL"}]
+ }]
+}

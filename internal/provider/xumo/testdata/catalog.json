@@ -1,0 +1,12 @@
+{
+  "version": 2.0,
+  "channel": {
+    "title": "Synthetic Xumo catalog", "description": "Not a guide", "link": "https://play.xumo.com/",
+    "item": [
+      {"guid":{"value":"99991158","isPermaLink":false,"permaLink":false},"title":" CBS News 24/7 ","callsign":"XCBSNWS-CMS","number":"100","description":"UNUSED_PROGRAM_DESCRIPTION","genre":[{"genreId":1,"value":" News "}],"properties":{"is_live":"true","is_simulcast":"true","has_vod":"false","hybrid_type":"1.9.6"}},
+      {"guid":{"value":"90000002"},"title":"Protected Example","callsign":"EXAMPLE-DRM","genre":[{"value":"Other"}],"properties":{"is_live":"true"}},
+      {"guid":{"value":"90000003"},"title":"Unverified Example","callsign":"EXAMPLE-CMS","properties":{"is_live":"true","is_simulcast":"true"}},
+      {"guid":{"value":"90000004"},"title":"Not Live","callsign":"EXAMPLE-VOD","properties":{"is_live":"false"}}
+    ]
+  }
+}

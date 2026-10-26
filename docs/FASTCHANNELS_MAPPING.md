@@ -57,7 +57,7 @@ routing evidence is linked in the implementation discrepancies section.
 | Provider / upstream ID | Access model | Discovery workflow | Tune-time behavior | Stream | DRM | Delivery | Region/session considerations | ArixTV decision | ArixTV status | Evidence |
 |---|---|---|---|---|---|---|---|---|---|---|
 | Pluto TV (`pluto`) | Free; optional account | Country-specific bootstrap and channel catalog | Anonymous device/session bootstrap; issue fresh JWT stitcher HLS URL | HLS | Clear path; full catalog unknown | Direct candidate | Country feeds; rotating anonymous device sessions; short-lived JWT | V1 candidate (anonymous clear only) | Not implemented | [pluto.py](https://github.com/kineticman/FastChannels/blob/7e61c1ef127f7119326eb98381726d6f7cfaa56d/app/scrapers/pluto.py) |
-| Xumo Play (`xumo`) | Free | Valencia market/geo channel-list API | Current broadcast → live asset → provider source; unwrap playlist indirection | HLS | Mixed; DRM callsigns/metadata filtered | Direct candidate | Market/geo/device identifiers; API Origin/Referer; program-window URL expiry | V1 candidate (filter DRM) | Not implemented | [xumo.py](https://github.com/kineticman/FastChannels/blob/7e61c1ef127f7119326eb98381726d6f7cfaa56d/app/scrapers/xumo.py) |
+| Xumo Play (`xumo`) | Anonymous/free | First-party Valencia market 10006 catalog; 454 entries observed without fixed geo/device query values | Fresh catalog check → current live broadcast asset → providers-only source → bounded optional JSON pointer/HLS validation | HLS for qualified reference; other formats unknown | Mixed/unknown: 18 DRM-marked callsigns; only independently verified reference qualified Direct | Reference clear Direct; observed cookies/explicit IP binding relay-only; unverified channels unknown | US-only website; API web context headers; generated ephemeral query identities; future refresh hint is not content start; opaque URL lifetime/cross-egress behavior unproven | V1 experimental, narrowly qualified reference only | Phase 3B implementation; offline server reload/302 and final single-channel live smoke pass | [current xumo.py](https://github.com/kineticman/FastChannels/blob/376c1a69b8c11f6271e4557859fee75fe9ec5cb8/app/scrapers/xumo.py), [public catalog](https://valencia-app-mds.xumo.com/v2/proxy/channels/list/10006.json?sort=hybrid), [evidence/limits](providers/XUMO.md) |
 | Plex (`plex`) | Free; anonymous token | Anonymous auth then XML channel lineup | Best-effort tune; part-manifest request follows redirect to fresh MediaTailor URL | HLS | Clear path; full catalog unknown | Direct candidate | Anonymous Plex token, client/playback IDs; refresh rejected tokens; region-specific lineup | V1 candidate | Not implemented | [plex.py](https://github.com/kineticman/FastChannels/blob/7e61c1ef127f7119326eb98381726d6f7cfaa56d/app/scrapers/plex.py) |
 | The Roku Channel (`roku`) | Free; anonymous session | Session cookies; EPG collections, billboards and content API fallback | Playback API supplies fresh HLS; separate DASH path carries DRM | Mixed HLS/DASH | Mixed | Direct for clear HLS; bridge for DRM | Cloudflare-sensitive; geo/session cookies and expiring playback URLs | V1 candidate (clear only; higher operational risk) | Not implemented | [roku.py](https://github.com/kineticman/FastChannels/blob/7e61c1ef127f7119326eb98381726d6f7cfaa56d/app/scrapers/roku.py) |
 | Samsung TV Plus (`samsung`) | Free | Third-party gzipped per-region channel mirror; skip license_url entries | Follow short-link redirects to final CDN with appropriate request UA | HLS selected | Mixed catalog; licensed entries excluded | Direct candidate | Configurable regions; mirror and redirect service are extra dependencies | V1 candidate (clear only; mirror review) | Not implemented | [samsung.py](https://github.com/kineticman/FastChannels/blob/7e61c1ef127f7119326eb98381726d6f7cfaa56d/app/scrapers/samsung.py) |
@@ -301,3 +301,28 @@ URL lifetime and remote-client egress compatibility remain unestablished.
 [Vizio protocol/support notes](providers/VIZIO.md) record counts, classification,
 headers, region/session assumptions, exact live instructions and limitations.
 No upstream source or raw provider captures were incorporated.
+
+## Phase 3B Xumo-only reinspection (2026-10-27, Asia/Hong_Kong)
+
+Rechecked current default/development commit
+[`376c1a69b8c11f6271e4557859fee75fe9ec5cb8`](https://github.com/kineticman/FastChannels/tree/376c1a69b8c11f6271e4557859fee75fe9ec5cb8).
+Only Xumo's row/current evidence changes in Phase 3B; other provider evidence pins,
+including Vizio's experimental status, are preserved. Inspected Xumo's scraper,
+shared base/play/audit references, README and identified associated category/data
+mapping paths. No upstream code, tests or guide mappings were incorporated.
+
+Independent public requests returned a complete version-2 market-10006 catalog:
+454 entries, no account authentication or fixed geo/device query parameters.
+One CBS News identity was independently checked through live asset/provider-source
+resolution and bounded clear HLS manifests, without playback cookies or special
+headers. Eighteen callsigns indicated DRM; the remaining unverified identities are
+not automatically Direct. The official website reports US-only availability.
+
+Observed protocol details strengthened the initial inventory: a future
+`refresh.from/to` range can accompany an already-live asset, and a valid opaque
+source-query value can contain a literal semicolon. ArixTV preserves those values,
+uses current asset validity and conservative expiry ceilings, and has regression
+tests for both findings. Final Go live smoke passed after correcting those two
+Xumo-local interpretations; one success is not stable/region/expiry certification.
+[Xumo notes](providers/XUMO.md) document headers, generated anonymous identities,
+all inspected paths, stream selection, limits and outstanding uncertainty.
